@@ -1,9 +1,6 @@
 import lark
 from lark import Lark, Transformer, Tree, Discard
 import regex as re
-from modules import Toks, Repeat, Phrase, OrGroup, VarDefn, VarRef, Wildcard
-import tiny_model
-from .macros import DEFINED_MACROS
 
 grammar = r"""
     %import common.INT
@@ -62,18 +59,21 @@ grammar = r"""
     ?start   : lines
 """
 
+
 def escape(s):
     """
     Escapes special characters in a string for use in tokre patterns.
-    
+
     Args:
     s (str): The input string to escape.
-    
+
     Returns:
     str: The escaped string.
     """
-    special_chars_wo_newline = r"\^$|&*+{}()<>?[].=;" + ''.join([str(i) for i in range(10)])
-    s = ''.join('\\' + c if c in special_chars_wo_newline else c for c in s)
+    special_chars_wo_newline = r"\^$|&*+{}()<>?[].=;" + "".join(
+        [str(i) for i in range(10)]
+    )
+    s = "".join("\\" + c if c in special_chars_wo_newline else c for c in s)
     s = s.replace("\n", "\\n")
     return s
 
@@ -234,7 +234,11 @@ class SimplifyTree(Transformer):
             return lines[0]
 
     def phrase(self, children):
-        return Tree("phrase", children)
+        if len(children) == 1:
+            assert isinstance(children[0], Tree), 'non-tree single child in phrase'
+            return children[0]
+        else:
+            return Tree("phrase", children)
 
     def bool(self, children):
         assert len(children) == 1
@@ -261,58 +265,6 @@ class SimplifyTree(Transformer):
         return Tree("wildcard", [])
 
 
-class InsertModules(Transformer):
-    def repeat(self, children):
-        assert len(children) == 3
-        child_matcher, repeat_min, repeat_max = children
-        return Repeat(child_matcher=child_matcher, min=repeat_min, max=repeat_max)
-
-    def string(self, children):
-        assert len(children) == 1, children
-        assert isinstance(children[0], str)
-        toks = tiny_model.raw_toks[
-            tiny_model.enc(stories=children)[0].tolist()
-        ].tolist()
-        return Toks(toks=toks)
-
-    def wildcard(self, children):
-        return Wildcard()
-
-    def phrase(self, children):
-        return Phrase(matchers=children)
-
-    def or_pattern(self, children):
-        return OrGroup(matchers=children)
-
-    def var_defn(self, children):
-        assert len(children) == 2
-        var_name, child_matcher = children
-        return VarDefn(var_name=var_name, child_matcher=child_matcher)
-
-    def var_ref(self, children):
-        assert len(children) == 1, children
-        var_name = children[0]
-        return VarRef(var_name=var_name)
-
-    def macro(self, children):
-        assert len(children) >= 1
-
-        macro_name, children = children[0], children[1:]
-
-        args, kwargs = [], {}
-
-        for child in children:
-            if isinstance(child, dict):
-                kwargs = kwargs | child
-            else:
-                args.append(child)
-
-        if macro_name in DEFINED_MACROS:
-            return DEFINED_MACROS[macro_name](*args, **kwargs)
-        else:
-            assert False, f"macro {macro_name} not found in macros.py"
-
-
 def parse_line(line: str):
     assert "\n" not in line
     # [non-newline space]* [name=...] [non-newline space]*
@@ -326,11 +278,10 @@ def parse_line(line: str):
         return parser.parse(line)
 
 
-def parse(s, return_tree=False):
+def parse(s):
     parsed_lines = [parse_line(line) for line in s.split("\n") if len(line.strip()) > 0]
     tree = Tree("lines", parsed_lines)
     tree = SimplifyTree().transform(tree)
-    if return_tree:
-        return tree
-    matcher = InsertModules().transform(tree)
-    return matcher
+    return tree
+
+

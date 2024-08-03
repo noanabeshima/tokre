@@ -1,7 +1,8 @@
 from __future__ import annotations
 import torch
 import torch.nn as nn
-from typing import Union, Optional
+
+from typing import Union, TypeAlias, Optional
 from dataclasses import dataclass
 from types import MappingProxyType
 
@@ -16,7 +17,7 @@ def randstr(length=4):
 @dataclass
 class EmbedData:
     name: str
-    content: Union[int, tuple[int]]
+    data: Union[int, tuple[int]]
 
 
 class Embed(nn.Module):
@@ -43,7 +44,17 @@ class Embed(nn.Module):
         if len(indices) == 1:
             indices = indices[0]
 
-        return EmbedData(name=self.name, content=indices)
+        return EmbedData(name=self.name, data=indices)
+    
+    def pred(self, embed_data: EmbedData):
+        indices = tuple(embed_data.data)
+        assert all([isinstance(i, int) for i in indices])
+        assert len(indices) == len(self.embed_shape)
+
+        assert all([(idx >= 0 and idx < embed_max) for (idx, embed_max) in zip(indices, self.embed_shape)])
+
+        return self.embed[tuple(embed_data.data)]
+        
 
     def __repr__(self):
         return f"Embed{self.embed_shape}"
@@ -60,11 +71,15 @@ class Mixer(nn.Module):
         self.bilinear = bilinear
         self.linear = linear
 
-        if bilinear:
+        if self.bilinear:
+            self.bilinear_pre_bias = nn.Parameter(torch.zeros(d_module,))
             self.bilinear_param = nn.Parameter(torch.zeros(d_module, d_module))
 
-        if linear:
+        if self.linear:
+            self.linear_pre_bias = nn.Parameter(torch.zeros(d_module,))
             self.linear_param = nn.Parameter(torch.ones(d_module) / d_module)
+        
+        # self.inp_bias = nn.Parameter(torch.ones(d_module + 1) / d_module)
 
     def device(self):
         if hasattr(self, "bilinear_param"):
@@ -85,26 +100,48 @@ class Mixer(nn.Module):
             raise ValueError(
                 "Mixer object has neither self.bilinear_param or self.linear_param, which isn't expected."
             )
-
+        
     def forward(self, x):
-        assert len(x.shape) == 2, "input must be batched vectors"
+        D = x.shape[0]
+        y = torch.tensor([0.])
+        if self.bilinear:
+            pre_bilinear = x + self.bilinear_pre_bias[:D]
+            y = y + torch.einsum('i, ij, j', pre_bilinear, self.bilinear_param[:D, :D], pre_bilinear)
+        if self.linear:
+            pre_linear = x + self.linear_pre_bias[:D]
+            y = y + self.linear_param @ pre_linear
+        return y
 
-        if self.linear and not self.bilinear:
-            return x @ self.linear_param
-        elif self.bilinear and not self.linear:
-            return torch.einsum("mn, bn, bm -> b", self.bilinear_param, x, x)
-        elif self.linear and self.bilinear:
-            return (x @ self.linear_param) + torch.einsum(
-                "mn, bn, bm -> b", self.bilinear_param, x, x
-            )
-        else:
-            assert self.d_module == 1
-            return x[..., 0]
+
+
+
+
+
+    # def forward(self, x):
+    #     assert len(x.shape) == 2, "input must be batched vectors"
+
+    #     if self.linear and not self.bilinear:
+    #         return x @ self.linear_param
+    #     elif self.bilinear and not self.linear:
+    #         return torch.einsum("mn, bn, bm -> b", self.bilinear_param, x, x)
+    #     elif self.linear and self.bilinear:
+    #         return (x @ self.linear_param) + torch.einsum(
+    #             "mn, bn, bm -> b", self.bilinear_param, x, x
+    #         )
+    #     else:
+    #         assert self.d_module == 1
+    #         return x[..., 0]
+
+    # def pred(self, data: list[PredData]):
+
 
     def __repr__(self):
         return f"Mixer({self.d_module}, bilinear={self.bilinear}, linear={self.linear})"
 
 
+
+
+# PredData: TypeAlias = Union["PartialMatch", EmbedData, None, list["PredData"]]
 PredData = Union["PartialMatch", EmbedData, None, list["PredData"]]
 
 
@@ -118,6 +155,15 @@ class PartialMatch:
 
     def __len__(self):
         return self.end - self.start
+
+
+def is_pred_data(obj):
+    return (
+        isinstance(obj, (PartialMatch, EmbedData, list)) or
+        obj is None or
+        (isinstance(obj, list) and all(is_pred_data(item) for item in obj))
+    )
+    
 
 
 def batched_extend_matches(
@@ -375,7 +421,7 @@ class VarRef(nn.Module):
         self.name = f"VarRef({var_name}):{randstr()}" if name is None else name
         self.var_name = var_name
 
-    def matches(self, toks, partial, reversed=False):
+    def matches(self, toks, partial, reversed):
         # unaffected by reversed
 
         if self.var_name not in partial.defns:
@@ -397,3 +443,29 @@ class VarRef(nn.Module):
 
     def extra_repr(self):
         return f"'{self.var_name}'"
+
+
+class LearnedConst(nn.Module):
+    def __init__(self, child_module, name=None):
+        super().__init__()
+        self.name = f"LearnedConst:{randstr()}" if name is None else name
+        self.child_module = child_module
+        self.bias = Embed(1)
+
+    def matches(self, toks, partial, reversed):
+        matches = self.child_module.matches(toks, partial, reversed)
+        matches = [
+            PartialMatch(
+                name=self.name,
+                start=match.start,
+                end=match.end,
+                defns=match.defns,
+                data=self.bias(0)
+            )
+            for match in matches
+        ]
+        return matches
+    
+    @property
+    def pyregex(self):
+        return self.child_module.pyregex

@@ -2,8 +2,8 @@ from pathlib import Path
 from typing import Optional
 
 import tokre
+from tokre.utils import hash_tokenizer
 
-from .utils import hash_tokenizer
 
 def setup(
     tokenizer, workspace: Optional[str] = None, openai_api_key: Optional[str] = None

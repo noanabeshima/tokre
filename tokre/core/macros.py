@@ -1,4 +1,4 @@
-from modules import Embed, Mixer, VarRef, PartialMatch, randstr, toks_eq
+from tokre.core.modules import Embed, Mixer, VarRef, PartialMatch, randstr, toks_eq
 from torch import nn
 import tiny_model
 

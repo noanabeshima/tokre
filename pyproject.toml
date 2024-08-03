@@ -17,6 +17,7 @@ ray = "^2.34.0"
 pathlib = "^1.0.1"
 schedulefree = "^1.2.7"
 torch = "^2.4.0"
+black = "^24.4.2"
 
 
 [build-system]

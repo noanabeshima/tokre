@@ -1,2 +1,5 @@
-*/**/.ipynb
+*/**/*.ipynb
 *.ipynb
+**__pycache__**
+**.pt
+*/**/*.pt
