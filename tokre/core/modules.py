@@ -72,12 +72,12 @@ class Mixer(nn.Module):
         self.linear = linear
 
         if self.bilinear:
-            self.bilinear_pre_bias = nn.Parameter(torch.zeros(d_module,))
-            self.bilinear_param = nn.Parameter(torch.zeros(d_module, d_module))
+            self.bilinear_pre_bias = nn.Parameter(torch.zeros(d_module+1,))
+            self.bilinear_param = nn.Parameter(torch.zeros(d_module+1, d_module+1))
 
         if self.linear:
-            self.linear_pre_bias = nn.Parameter(torch.zeros(d_module,))
-            self.linear_param = nn.Parameter(torch.ones(d_module) / d_module)
+            self.linear_pre_bias = nn.Parameter(torch.zeros(d_module+1,))
+            self.linear_param = nn.Parameter(torch.ones(d_module+1) / d_module)
         
         # self.inp_bias = nn.Parameter(torch.ones(d_module + 1) / d_module)
 
@@ -103,13 +103,13 @@ class Mixer(nn.Module):
         
     def forward(self, x):
         D = x.shape[0]
-        y = torch.tensor([0.])
+        y = torch.tensor(0.)
         if self.bilinear:
             pre_bilinear = x + self.bilinear_pre_bias[:D]
             y = y + torch.einsum('i, ij, j', pre_bilinear, self.bilinear_param[:D, :D], pre_bilinear)
         if self.linear:
             pre_linear = x + self.linear_pre_bias[:D]
-            y = y + self.linear_param @ pre_linear
+            y = y + self.linear_param[:D] @ pre_linear
         return y
 
 
