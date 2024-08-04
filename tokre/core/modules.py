@@ -105,7 +105,7 @@ class Mixer(nn.Module):
         D = x.shape[0]
         y = torch.tensor(0.)
         if self.bilinear:
-            pre_bilinear = x + self.bilinear_pre_bias[:D]
+            pre_bilinear = x# + self.bilinear_pre_bias[:D]
             y = y + torch.einsum('i, ij, j', pre_bilinear, self.bilinear_param[:D, :D], pre_bilinear)
         if self.linear:
             pre_linear = x# + self.linear_pre_bias[:D]
