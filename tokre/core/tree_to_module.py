@@ -1,4 +1,4 @@
-from tokre.core.modules import Toks, Repeat, Phrase, OrGroup, VarDefn, VarRef, Wildcard, LearnedConst
+from tokre.core.modules import Toks, Repeat, Phrase, OrGroup, VarDefn, VarRef, Wildcard, LearnedConst, Lookbehind, Lookahead
 from tokre.core.macros import DEFINED_MACROS
 from tokre.core.parsing import parse
 from lark import Transformer
