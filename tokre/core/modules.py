@@ -192,9 +192,10 @@ def batched_extend_matches(
     return new_partials
 
 
-def pyregex_literal(toks):
-    # [STUB]
-    return "".join(toks)
+# def pyregex_literal(toks):
+#     # [STUB]
+#     return "".join(toks)
+from tokre.core.pyregex import pyregex_literal
 
 
 def toks_eq(toks_a: list[str], toks_b: list[str]):
