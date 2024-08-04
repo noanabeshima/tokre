@@ -59,6 +59,12 @@ grammar = r"""
     ?start   : lines
 """
 
+special_chars_wo_newline = r"\^$|&*+{}()<>?[].=;" + "".join(
+        [str(i) for i in range(10)]
+    )
+
+special_tokre_chars = special_chars_wo_newline+"\n"
+
 
 def escape(s):
     """
@@ -70,9 +76,7 @@ def escape(s):
     Returns:
     str: The escaped string.
     """
-    special_chars_wo_newline = r"\^$|&*+{}()<>?[].=;" + "".join(
-        [str(i) for i in range(10)]
-    )
+    global special_chars_wo_newline
     s = "".join("\\" + c if c in special_chars_wo_newline else c for c in s)
     s = s.replace("\n", "\\n")
     return s
