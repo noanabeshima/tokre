@@ -380,7 +380,7 @@ class OrGroup(nn.Module):
 
     @property
     def pyregex(self):
-        return f"({'|'.join([child.pyregex for child in self.matchers])})"
+        return f"({'|'.join([child.pyregex for child in self.branches])})"
 
 
 class VarDefn(nn.Module):
@@ -443,6 +443,127 @@ class VarRef(nn.Module):
 
     def extra_repr(self):
         return f"'{self.var_name}'"
+    
+'''
+ # [child, is_backward, is_neg]
+Tree("lookaround", [child_tree, True, False])
+'''
+
+
+# def reverse_transformation(toks, partial):
+#     toks = toks[::-1]
+#     partial = PartialMatch(
+#         name=partial.name,
+#         start=len(toks)-partial.start
+#         end=len(toks)-partial.end
+#     )
+# class Lookaround(nn.Module):
+#     def __init__(self, child_module, is_backward: bool, is_neg: bool, name=None):
+#         super().__init__()
+#         self.name = f'Lookaround:{randstr()}' if name is None else name
+#         self.child_module = child_module
+#         self.is_backward = is_backward
+#         self.is_neg = is_neg
+    
+#     def matches(self, toks, partial, reversed):
+#         toks = toks if not reversed else toks[::-1]
+#         cur_idx = partial.end if not reversed else len(toks)-partial.end-1
+#         # altered_partial = Partial(
+#         #     name=self.name,
+#         #     start=
+#         # )
+#         matches = self.child_module.matches(toks, partial, reversed=(not reversed if self.is_backward else reversed))
+#         if self.is_neg:
+#             if matches:
+#                 return []
+#             else:
+#                 return [partial]
+#         else:
+#             matches = [
+#                 PartialMatch(
+#                     name=self.name,
+#                     start=cur_idx,
+#                     end=cur_idx,
+#                     defns=match.defns,
+#                     data=match
+#                 )
+#                 for match in matches
+#             ]
+#         return matches
+
+class Lookahead(nn.Module):
+    def __init__(self, child_module, is_neg: bool, name=None):
+        super().__init__()
+        self.name = f'Lookaround:{randstr()}' if name is None else name
+        self.child_module = child_module
+        self.is_neg = is_neg
+    
+    def matches(self, toks, partial, reversed):
+
+        matches = self.child_module.matches(toks, partial, reversed=False)
+        if self.is_neg:
+            if matches:
+                return []
+            else:
+                return [partial]
+        else:
+            matches = [
+                PartialMatch(
+                    name=self.name,
+                    start=partial.end,
+                    end=partial.end,
+                    defns=match.defns,
+                    data=match
+                )
+                for match in matches
+            ]
+        return matches
+
+    def extra_repr(self):
+        return f'(is_neg): {self.is_neg}'
+            
+            
+        
+class Lookbehind(nn.Module):
+    def __init__(self, child_module, is_neg: bool, name=None):
+        super().__init__()
+        self.name = f'Lookaround:{randstr()}' if name is None else name
+        self.child_module = child_module
+        self.is_neg = is_neg
+    
+    def matches(self, toks, partial, reversed):
+        reversed_toks = toks[::-1]
+        reversed_partial = PartialMatch(
+            name=partial.name,
+            start=len(toks)-partial.end,
+            end=len(toks)-partial.end,
+            defns=frozendict({k: v[::-1] for k, v in partial.defns}),
+            data=partial.data
+        )
+
+        matches = self.child_module.matches(reversed_toks, reversed_partial, reversed=True)
+        if self.is_neg:
+            if len(matches) > 0:
+                return []
+            else:
+                return [partial]
+        else:
+            matches = [
+                PartialMatch(
+                    name=self.name,
+                    start=partial.end,
+                    end=partial.end,
+                    defns={k: v[::-1] for k, v in match.defns.items()},
+                    data=match
+                )
+                for match in matches
+            ]
+        return matches
+    def extra_repr(self):
+        return f'(is_neg): {self.is_neg}'
+            
+
+
 
 
 class LearnedConst(nn.Module):
