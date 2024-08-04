@@ -118,6 +118,7 @@ class SynthFeat(nn.Module):
                 act = doc_acts[match.end-1]
                 loss = ((pred(self.module, match.data)-act)**2)
 
+                self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
 
