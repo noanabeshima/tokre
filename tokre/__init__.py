@@ -5,6 +5,7 @@ from tokre.core.tree_to_module import tree_to_module, compile
 from tokre.core.synth_feat import SynthFeat, collect_matches
 
 from tokre.core.modules import EmbedData, PredData, PartialMatch, Mixer
+from tokre.core.pyregex import pyregex_literal
 
 
 _tokenizer = None
