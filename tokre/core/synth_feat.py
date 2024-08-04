@@ -1,13 +1,13 @@
 import torch.nn as nn
 import tokre
 from tokre.core.modules import PartialMatch, EmbedData
-from types import MappingProxyType
 from tokre.core.parsing import parse
 from tokre.core.tree_to_module import compile
 
 from schedulefree import AdamWScheduleFree
 import numpy as np
 import torch
+from frozendict import frozendict
 
 from typing import Iterable
 
@@ -18,7 +18,7 @@ def collect_matches(matcher, toks, aggr='longest'):
                 name='start',
                 start=start_idx,
                 end=start_idx,
-                defns=MappingProxyType({}),
+                defns=frozendict(),
                 data=None,
             )
             for start_idx in range(len(toks))
