@@ -11,7 +11,7 @@ from frozendict import frozendict
 
 from typing import Iterable
 
-def collect_matches(matcher, toks, aggr='longest'):
+def collect_matches(module, toks, aggr='longest'):
     assert aggr in ['shortest', 'longest']
     starting_matches = [
             PartialMatch(
@@ -24,7 +24,7 @@ def collect_matches(matcher, toks, aggr='longest'):
             for start_idx in range(len(toks))
         ]
 
-    unaggregated_matches = [match for start_match in starting_matches for match in matcher.matches(toks, start_match, reversed=False)]
+    unaggregated_matches = [match for start_match in starting_matches for match in module.matches(toks, start_match, reversed=False)]
     
     end_to_aggr_match = {}
     for match in unaggregated_matches:
