@@ -361,7 +361,7 @@ class OrGroup(nn.Module):
 
         self.which_branch = Embed(len(self.branches))
 
-        self.mixer = Mixer(2, bilinear=True)
+        self.mixer = Mixer(2, linear=True)
 
     def matches(self, toks, partial, reversed=False):
         res = []
