@@ -108,7 +108,7 @@ class Mixer(nn.Module):
             pre_bilinear = x + self.bilinear_pre_bias[:D]
             y = y + torch.einsum('i, ij, j', pre_bilinear, self.bilinear_param[:D, :D], pre_bilinear)
         if self.linear:
-            pre_linear = x + self.linear_pre_bias[:D]
+            pre_linear = x# + self.linear_pre_bias[:D]
             y = y + self.linear_param[:D] @ pre_linear
         return y
 
