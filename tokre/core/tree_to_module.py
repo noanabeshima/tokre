@@ -39,6 +39,14 @@ class InsertModules(Transformer):
         var_name = children[0]
         return VarRef(var_name=var_name)
 
+    def lookaround(self, children):
+        child_module, is_backward, is_neg = children
+        if is_backward is True:
+            return Lookbehind(child_module, is_neg=is_neg)
+        else:
+            assert is_backward is False
+            return Lookahead(child_module, is_neg=is_neg)
+
     def macro(self, children):
         assert len(children) >= 1
 
@@ -56,6 +64,7 @@ class InsertModules(Transformer):
             return DEFINED_MACROS[macro_name](*args, **kwargs)
         else:
             assert False, f"macro {macro_name} not found in macros.py"
+    
 
 def tree_to_module(tree):
     module = InsertModules().transform(tree)
