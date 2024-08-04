@@ -121,7 +121,7 @@ class SynthFeat(nn.Module):
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
-
+                
     @property
     def pyregex(self):
         return self.module.pyregex
