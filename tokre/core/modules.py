@@ -140,8 +140,6 @@ class Mixer(nn.Module):
 
 
 
-
-# PredData: TypeAlias = Union["PartialMatch", EmbedData, None, list["PredData"]]
 PredData = Union["PartialMatch", EmbedData, None, list["PredData"]]
 
 
