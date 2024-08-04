@@ -4,7 +4,7 @@ import torch.nn as nn
 
 from typing import Union, TypeAlias, Optional
 from dataclasses import dataclass
-from types import MappingProxyType
+from frozendict import frozendict
 
 
 def randstr(length=4):
@@ -150,7 +150,7 @@ class PartialMatch:
     name: str
     start: int
     end: int
-    defns: MappingProxyType
+    defns: frozendict
     data: PredData
 
     def __len__(self):
