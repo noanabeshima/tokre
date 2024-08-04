@@ -210,11 +210,12 @@ class Toks(nn.Module):
         self.toks = toks
 
     def matches(self, toks, partial, reversed: bool):
-        if toks_eq(toks[partial.end : partial.end + len(self.toks)], self.toks):
+        match_toks = self.toks if reversed is False else self.toks[::-1]
+        if toks_eq(toks[partial.end:partial.end+len(match_toks)], match_toks):
             match = PartialMatch(
                 name=self.name,
                 start=partial.end,
-                end=partial.end + len(self.toks),
+                end=partial.end + len(match_toks),
                 defns=partial.defns,
                 data=None,
             )
