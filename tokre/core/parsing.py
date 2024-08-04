@@ -214,7 +214,7 @@ class SimplifyTree(Transformer):
         child_tree = children[0]
 
         # [child, is_backward, is_neg]
-        return Tree("lookaround", [child_tree, False, False])
+        return Tree("lookaround", [child_tree, True, True])
 
     def macro_string_arg(self, children):
         return "".join([str(ch) for ch in children])
