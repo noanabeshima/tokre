@@ -7,6 +7,7 @@ from tokre.core.synth_feat import SynthFeat, collect_matches
 from tokre.core.modules import EmbedData, PredData, PartialMatch, Mixer
 from tokre.core.pyregex import pyregex_literal
 
+from tokre.labelling.create_label import create_label, get_all_toks
 
 _tokenizer = None
 _workspace = None
