@@ -79,7 +79,7 @@ class Mixer(nn.Module):
             self.linear_pre_bias = nn.Parameter(torch.zeros(d_module+1,))
             self.linear_param = nn.Parameter(torch.ones(d_module+1) / d_module)
         
-        # self.inp_bias = nn.Parameter(torch.ones(d_module + 1) / d_module)
+        self.bias = nn.Parameter(torch.zeros(1)[0])
 
     def device(self):
         if hasattr(self, "bilinear_param"):
@@ -103,7 +103,7 @@ class Mixer(nn.Module):
         
     def forward(self, x):
         D = x.shape[0]
-        y = torch.tensor(0.)
+        y = self.bias
         if self.bilinear:
             pre_bilinear = x# + self.bilinear_pre_bias[:D]
             y = y + torch.einsum('i, ij, j', pre_bilinear, self.bilinear_param[:D, :D], pre_bilinear)
