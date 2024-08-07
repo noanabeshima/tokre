@@ -59,11 +59,9 @@ grammar = r"""
     ?start   : lines
 """
 
-special_chars_wo_newline = r"\^$|&*+{}()<>?[].=;" + "".join(
-        [str(i) for i in range(10)]
-    )
+special_chars_wo_newline = r"\^$|&*+{}()<>?[].=;" + "".join([str(i) for i in range(10)])
 
-special_tokre_chars = special_chars_wo_newline+"\n"
+special_tokre_chars = special_chars_wo_newline + "\n"
 
 
 def escape(s):
@@ -239,7 +237,7 @@ class SimplifyTree(Transformer):
 
     def phrase(self, children):
         if len(children) == 1:
-            assert isinstance(children[0], Tree), 'non-tree single child in phrase'
+            assert isinstance(children[0], Tree), "non-tree single child in phrase"
             return children[0]
         else:
             return Tree("phrase", children)
@@ -284,7 +282,7 @@ def parse_line(line: str):
 
 def remove_comments(code):
     # Remove inline comments
-    code = re.sub(r'(?<!\\)#.*', '', code)
+    code = re.sub(r"(?<!\\)#.*", "", code)
     # # Remove multiline comments
     # code = re.sub(r'\'\'\'.*?\'\'\'', '', code, flags=re.DOTALL)
     # code = re.sub(r'\"\"\".*?\"\"\"', '', code, flags=re.DOTALL)
@@ -297,5 +295,3 @@ def parse(s):
     tree = Tree("lines", parsed_lines)
     tree = SimplifyTree().transform(tree)
     return tree
-
-

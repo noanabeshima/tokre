@@ -45,16 +45,20 @@ class Embed(nn.Module):
             indices = indices[0]
 
         return EmbedData(name=self.name, data=indices)
-    
+
     def pred(self, embed_data: EmbedData):
         indices = tuple(embed_data.data)
         assert all([isinstance(i, int) for i in indices])
         assert len(indices) == len(self.embed_shape)
 
-        assert all([(idx >= 0 and idx < embed_max) for (idx, embed_max) in zip(indices, self.embed_shape)])
+        assert all(
+            [
+                (idx >= 0 and idx < embed_max)
+                for (idx, embed_max) in zip(indices, self.embed_shape)
+            ]
+        )
 
         return self.embed[tuple(embed_data.data)]
-        
 
     def __repr__(self):
         return f"Embed{self.embed_shape}"
@@ -72,13 +76,21 @@ class Mixer(nn.Module):
         self.linear = linear
 
         if self.bilinear:
-            self.bilinear_pre_bias = nn.Parameter(torch.zeros(d_module+1,))
-            self.bilinear_param = nn.Parameter(torch.zeros(d_module+1, d_module+1))
+            self.bilinear_pre_bias = nn.Parameter(
+                torch.zeros(
+                    d_module + 1,
+                )
+            )
+            self.bilinear_param = nn.Parameter(torch.zeros(d_module + 1, d_module + 1))
 
         if self.linear:
-            self.linear_pre_bias = nn.Parameter(torch.zeros(d_module+1,))
-            self.linear_param = nn.Parameter(torch.ones(d_module+1) / d_module)
-        
+            self.linear_pre_bias = nn.Parameter(
+                torch.zeros(
+                    d_module + 1,
+                )
+            )
+            self.linear_param = nn.Parameter(torch.ones(d_module + 1) / d_module)
+
         self.bias = nn.Parameter(torch.zeros(1)[0])
 
     def device(self):
@@ -100,22 +112,19 @@ class Mixer(nn.Module):
             raise ValueError(
                 "Mixer object has neither self.bilinear_param or self.linear_param, which isn't expected."
             )
-        
+
     def forward(self, x):
         D = x.shape[0]
         y = self.bias
         if self.bilinear:
-            pre_bilinear = x# + self.bilinear_pre_bias[:D]
-            y = y + torch.einsum('i, ij, j', pre_bilinear, self.bilinear_param[:D, :D], pre_bilinear)
+            pre_bilinear = x  # + self.bilinear_pre_bias[:D]
+            y = y + torch.einsum(
+                "i, ij, j", pre_bilinear, self.bilinear_param[:D, :D], pre_bilinear
+            )
         if self.linear:
-            pre_linear = x# + self.linear_pre_bias[:D]
+            pre_linear = x  # + self.linear_pre_bias[:D]
             y = y + self.linear_param[:D] @ pre_linear
         return y
-
-
-
-
-
 
     # def forward(self, x):
     #     assert len(x.shape) == 2, "input must be batched vectors"
@@ -134,10 +143,8 @@ class Mixer(nn.Module):
 
     # def pred(self, data: list[PredData]):
 
-
     def __repr__(self):
         return f"Mixer({self.d_module}, bilinear={self.bilinear}, linear={self.linear})"
-
 
 
 PredData = Union["PartialMatch", EmbedData, None, list["PredData"]]
@@ -157,11 +164,10 @@ class PartialMatch:
 
 def is_pred_data(obj):
     return (
-        isinstance(obj, (PartialMatch, EmbedData, list)) or
-        obj is None or
-        (isinstance(obj, list) and all(is_pred_data(item) for item in obj))
+        isinstance(obj, (PartialMatch, EmbedData, list))
+        or obj is None
+        or (isinstance(obj, list) and all(is_pred_data(item) for item in obj))
     )
-    
 
 
 def batched_extend_matches(
@@ -207,7 +213,7 @@ class Toks(nn.Module):
 
     def matches(self, toks, partial, reversed: bool):
         match_toks = self.toks if reversed is False else self.toks[::-1]
-        if toks_eq(toks[partial.end:partial.end+len(match_toks)], match_toks):
+        if toks_eq(toks[partial.end : partial.end + len(match_toks)], match_toks):
             match = PartialMatch(
                 name=self.name,
                 start=partial.end,
@@ -440,11 +446,12 @@ class VarRef(nn.Module):
 
     def extra_repr(self):
         return f"'{self.var_name}'"
-    
-'''
+
+
+"""
  # [child, is_backward, is_neg]
 Tree("lookaround", [child_tree, True, False])
-'''
+"""
 
 
 # def reverse_transformation(toks, partial):
@@ -461,7 +468,7 @@ Tree("lookaround", [child_tree, True, False])
 #         self.child_module = child_module
 #         self.is_backward = is_backward
 #         self.is_neg = is_neg
-    
+
 #     def matches(self, toks, partial, reversed):
 #         toks = toks if not reversed else toks[::-1]
 #         cur_idx = partial.end if not reversed else len(toks)-partial.end-1
@@ -488,13 +495,14 @@ Tree("lookaround", [child_tree, True, False])
 #             ]
 #         return matches
 
+
 class Lookahead(nn.Module):
     def __init__(self, child_module, is_neg: bool, name=None):
         super().__init__()
-        self.name = f'Lookaround:{randstr()}' if name is None else name
+        self.name = f"Lookaround:{randstr()}" if name is None else name
         self.child_module = child_module
         self.is_neg = is_neg
-    
+
     def matches(self, toks, partial, reversed):
 
         matches = self.child_module.matches(toks, partial, reversed=False)
@@ -502,13 +510,15 @@ class Lookahead(nn.Module):
             if matches:
                 return []
             else:
-                return [PartialMatch(
-                    name=self.name,
-                    start=partial.end,
-                    end=partial.end,
-                    defns=partial.defns,
-                    data=None
-                )]
+                return [
+                    PartialMatch(
+                        name=self.name,
+                        start=partial.end,
+                        end=partial.end,
+                        defns=partial.defns,
+                        data=None,
+                    )
+                ]
         else:
             matches = [
                 PartialMatch(
@@ -516,46 +526,49 @@ class Lookahead(nn.Module):
                     start=partial.end,
                     end=partial.end,
                     defns=match.defns,
-                    data=match
+                    data=match,
                 )
                 for match in matches
             ]
         return matches
 
     def extra_repr(self):
-        return f'(is_neg): {self.is_neg}'
-            
-            
-        
+        return f"(is_neg): {self.is_neg}"
+
+
 class Lookbehind(nn.Module):
     def __init__(self, child_module, is_neg: bool, name=None):
         super().__init__()
-        self.name = f'Lookaround:{randstr()}' if name is None else name
+        self.name = f"Lookaround:{randstr()}" if name is None else name
         self.child_module = child_module
         self.is_neg = is_neg
-    
+
     def matches(self, toks, partial, reversed):
         reversed_toks = toks[::-1]
         reversed_partial = PartialMatch(
             name=partial.name,
-            start=len(toks)-partial.end,
-            end=len(toks)-partial.end,
+            start=len(toks) - partial.end,
+            end=len(toks) - partial.end,
             defns=frozendict({k: v[::-1] for k, v in partial.defns.items()}),
-            data=partial.data
+            data=partial.data,
         )
 
-        matches = self.child_module.matches(reversed_toks, reversed_partial, reversed=True)
+        matches = self.child_module.matches(
+            reversed_toks, reversed_partial, reversed=True
+        )
         if self.is_neg:
             if len(matches) > 0:
                 return []
             else:
-                return [PartialMatch(
-                    name=self.name,
-                    start=partial.end,
-                    end=partial.end,
-                    defns=partial.defns,
-                    data=None
-                )]
+                return [
+                    PartialMatch(
+                        name=self.name,
+                        start=partial.end,
+                        end=partial.end,
+                        defns=partial.defns,
+                        data=None,
+                    )
+                ]
         else:
             matches = [
                 PartialMatch(
@@ -563,16 +576,14 @@ class Lookbehind(nn.Module):
                     start=partial.end,
                     end=partial.end,
                     defns={k: v[::-1] for k, v in match.defns.items()},
-                    data=match
+                    data=match,
                 )
                 for match in matches
             ]
         return matches
+
     def extra_repr(self):
-        return f'(is_neg): {self.is_neg}'
-
-
-
+        return f"(is_neg): {self.is_neg}"
 
 
 class LearnedConst(nn.Module):
@@ -590,12 +601,12 @@ class LearnedConst(nn.Module):
                 start=match.start,
                 end=match.end,
                 defns=match.defns,
-                data=self.bias(0)
+                data=self.bias(0),
             )
             for match in matches
         ]
         return matches
-    
+
     @property
     def pyregex(self):
         return self.child_module.pyregex

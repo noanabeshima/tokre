@@ -13,22 +13,24 @@ def get_literal_variants(tok_literal: list[str]):
     variants = [tok_split(literal_str), tok_split(" " + literal_str)]
     return variants
 
+
 class BEGIN(nn.Module):
     def __init__(self):
         super().__init__()
-        name=f'BEGIN:{randstr()}'
-    
+        name = f"BEGIN:{randstr()}"
+
     def matches(self, toks, partial, reversed):
-        if toks[partial.end] == '[BEGIN]':
+        if toks[partial.end] == "[BEGIN]":
             return [
                 PartialMatch(
                     name=self.name,
                     start=partial.end,
-                    end=partial.end+1,
+                    end=partial.end + 1,
                     defns=partial.defns,
-                    data=None
+                    data=None,
                 )
             ]
+
 
 class VarVariant(nn.Module):
     def __init__(self, var_ref):
@@ -43,17 +45,14 @@ class VarVariant(nn.Module):
             var_toks = partial.defns[self.var_name]
             variants = get_literal_variants(var_toks)
             for variant in variants:
-                if toks_eq(
-                    toks[partial.end : partial.end + len(variant)],
-                    variant
-                ):
+                if toks_eq(toks[partial.end : partial.end + len(variant)], variant):
                     res.append(
                         PartialMatch(
                             name=self.name,
                             start=partial.end,
                             end=partial.end + len(variant),
                             defns=partial.defns,
-                            data=None
+                            data=None,
                         )
                     )
         return res
@@ -96,8 +95,10 @@ class VarPrefix(nn.Module):
     @property
     def pyregex(self):
         return r".{0," + str(self.max_len) + r"}"
-    
+
+
 import regex as re
+
 
 class TokRegex(nn.Module):
     def __init__(self, pattern, search=False):
@@ -105,24 +106,26 @@ class TokRegex(nn.Module):
         self.name = f"TokRegex:{pattern}:{randstr()}"
         self.pattern = pattern
         self.search = search
-    
+
     def matches(self, toks, partial, reversed):
         if partial.end == len(toks) and not reversed:
             return []
-        
+
         if partial.end == len(toks) and reversed:
             return []
-        
+
         tok = toks[partial.end]
 
-        if (self.search and re.search(self.pattern, tok)) or re.fullmatch(self.pattern, tok):
+        if (self.search and re.search(self.pattern, tok)) or re.fullmatch(
+            self.pattern, tok
+        ):
             return [
                 PartialMatch(
                     name=self.name,
                     start=partial.end,
                     end=partial.end + 1,
                     defns=partial.defns,
-                    data=None
+                    data=None,
                 )
             ]
         else:
@@ -137,17 +140,21 @@ class TokRegexSet(nn.Module):
         self.search = search
 
         if search is True:
-            self.toks = {tok for tok in tokre.get_all_toks() if re.search(self.pattern, tok)}
+            self.toks = {
+                tok for tok in tokre.get_all_toks() if re.search(self.pattern, tok)
+            }
         else:
-            self.toks = {tok for tok in tokre.get_all_toks() if re.fullmatch(self.pattern, tok)}
-    
+            self.toks = {
+                tok for tok in tokre.get_all_toks() if re.fullmatch(self.pattern, tok)
+            }
+
     def matches(self, toks, partial, reversed):
         if partial.end == len(toks) and not reversed:
             return []
-        
+
         if partial.end == len(toks) and reversed:
             return []
-        
+
         tok = toks[partial.end]
 
         if tok in self.toks:
@@ -157,12 +164,11 @@ class TokRegexSet(nn.Module):
                     start=partial.end,
                     end=partial.end + 1,
                     defns=partial.defns,
-                    data=None
+                    data=None,
                 )
             ]
         else:
             return []
-
 
 
 class Prefix(nn.Module):
@@ -170,22 +176,23 @@ class Prefix(nn.Module):
         super().__init__()
         self.name = f"Prefix:{randstr()}"
         self.child_module = child_module
-    
+
     def matches(self, toks, partial, reversed):
         matches = self.child_module.matches(toks, partial, reversed)
         res = []
         for match in matches:
-            for i in range(match.start+1, match.end+1):
+            for i in range(match.start + 1, match.end + 1):
                 res.append(
                     PartialMatch(
                         name=self.name,
                         start=match.start,
                         end=i,
                         defns=match.defns,
-                        data=match
+                        data=match,
                     )
                 )
         return res
+
 
 import tokre
 import json
@@ -193,11 +200,13 @@ import json
 import torch
 from tokre.core.modules import PartialMatch
 
+
 class TrieNode:
     def __init__(self):
         self.children = {}
         self.is_end = False
         self.value = None
+
 
 class Trie:
     def __init__(self, string_lists, values=None):
@@ -227,31 +236,31 @@ class Trie:
                 result.append(node.value)
         return result
 
+
 class LiteralSet(nn.Module):
     def __init__(self, literal_name):
         super().__init__()
         self.name = f"Literalset:{literal_name}:{randstr()}"
 
-        with open(tokre.get_workspace() / (literal_name+'.json')) as f:
+        with open(tokre.get_workspace() / (literal_name + ".json")) as f:
             data = json.load(f)
         assert isinstance(data, dict)
-        assert 'literal_set' in data
+        assert "literal_set" in data
 
-        self.literal_set = [tuple(it) for it in data['literal_set']]
+        self.literal_set = [tuple(it) for it in data["literal_set"]]
         self.trie = Trie(self.literal_set)
-        
+
         self.reversed_trie = Trie([toks[::-1] for toks in self.literal_set])
-        
+
         self.literal_idx = Embed(len(self.literal_set))
 
         self.mixer = Mixer(1, linear=True)
-
 
     def matches(self, toks, partial, reversed):
         trie = self.trie if reversed is False else self.reversed_trie
 
         res = []
-        forward_toks = toks[partial.end:]
+        forward_toks = toks[partial.end :]
 
         matching_prefixes = trie.prefixes(forward_toks)
         for prefix in matching_prefixes:
@@ -262,12 +271,19 @@ class LiteralSet(nn.Module):
                     start=partial.end,
                     end=partial.end + len(prefix),
                     defns=partial.defns,
-                    data=[self.literal_idx(self.literal_set.index(prefix))]
+                    data=[self.literal_idx(self.literal_set.index(prefix))],
                 )
             )
-        
+
         return res
 
 
-
-DEFINED_MACROS = {"var_prefix": VarPrefix, "re": TokRegex, 're_tok_set': TokRegexSet, 'literal_set': LiteralSet, 'prefix': Prefix, 'var_variant': VarVariant, 'BEGIN': BEGIN}
+DEFINED_MACROS = {
+    "var_prefix": VarPrefix,
+    "re": TokRegex,
+    "re_tok_set": TokRegexSet,
+    "literal_set": LiteralSet,
+    "prefix": Prefix,
+    "var_variant": VarVariant,
+    "BEGIN": BEGIN,
+}

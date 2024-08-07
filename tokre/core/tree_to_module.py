@@ -1,9 +1,19 @@
-from tokre.core.modules import Toks, Repeat, Phrase, OrGroup, VarDefn, VarRef, Wildcard, LearnedConst, Lookbehind, Lookahead
+from tokre.core.modules import (
+    Toks,
+    Repeat,
+    Phrase,
+    OrGroup,
+    VarDefn,
+    VarRef,
+    Wildcard,
+    LearnedConst,
+    Lookbehind,
+    Lookahead,
+)
 from tokre.core.macros import DEFINED_MACROS
 from tokre.core.parsing import parse
 from lark import Transformer
 import tiny_model
-
 
 
 class InsertModules(Transformer):
@@ -64,35 +74,42 @@ class InsertModules(Transformer):
             return DEFINED_MACROS[macro_name](*args, **kwargs)
         else:
             assert False, f"macro {macro_name} not found in macros.py"
-    
+
 
 def tree_to_module(tree):
     module = InsertModules().transform(tree)
     return module
 
+
 from torch import nn
+
+
 def recursively_add_name_to_submodule(module):
-    assert not hasattr(module, 'name_to_submodule'), 'module already has name_to_submodule attribute'
+    assert not hasattr(
+        module, "name_to_submodule"
+    ), "module already has name_to_submodule attribute"
     name_to_submodule = {}
-    
-    #[STUB] hard to read code
+
+    # [STUB] hard to read code
     def add_named_submodules(module, name_to_submodule):
         for submodule in module.children():
-            if hasattr(submodule, 'name'):
-                assert submodule.name not in name_to_submodule, 'Two tokre module children seem to have the same name?'
+            if hasattr(submodule, "name"):
+                assert (
+                    submodule.name not in name_to_submodule
+                ), "Two tokre module children seem to have the same name?"
                 name_to_submodule[submodule.name] = submodule
-    
+
             if isinstance(submodule, nn.ModuleList):
                 add_named_submodules(submodule, name_to_submodule)
-        
+
         return name_to_submodule
 
-
     add_named_submodules(module, name_to_submodule)
-    
+
     module.name_to_submodule = name_to_submodule
     for submodule in module.children():
         recursively_add_name_to_submodule(submodule)
+
 
 def compile(s):
     tree = parse(s)
