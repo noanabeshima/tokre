@@ -167,9 +167,6 @@ def is_pred_data(obj):
 def batched_extend_matches(
     toks, partial_matches: list[PartialMatch], child_matcher, reversed
 ):
-    """
-    matcher is a Matcher that implements matches
-    """
     new_partials = []
 
     for partial in partial_matches:
