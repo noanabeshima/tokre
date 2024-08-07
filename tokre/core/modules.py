@@ -430,7 +430,7 @@ class VarRef(nn.Module):
                 PartialMatch(
                     name=self.name,
                     start=partial.end,
-                    end=partial.end + len(partial.defns),
+                    end=partial.end + len(var_defn),
                     defns=partial.defns,
                     data=None,
                 )
