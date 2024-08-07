@@ -165,7 +165,7 @@ def is_pred_data(obj):
 
 
 def batched_extend_matches(
-    toks, partial_matches: list[PartialMatch], matcher, reversed
+    toks, partial_matches: list[PartialMatch], child_matcher, reversed
 ):
     """
     matcher is a Matcher that implements matches
@@ -176,7 +176,7 @@ def batched_extend_matches(
         assert isinstance(
             partial.data, list
         ), f"Provided partial match group_data must be represented as a list: {partial.data=}"
-        matcher_results = matcher.matches(toks, partial, reversed=reversed)
+        matcher_results = child_matcher.matches(toks, partial, reversed=reversed)
 
         for match_extension in matcher_results:
             extended_match = PartialMatch(
