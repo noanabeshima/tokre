@@ -17,7 +17,7 @@ def get_literal_variants(tok_literal: list[str]):
 class BEGIN(nn.Module):
     def __init__(self):
         super().__init__()
-        name = f"BEGIN:{randstr()}"
+        self.name = f"BEGIN:{randstr()}"
 
     def matches(self, toks, partial, reversed):
         if toks[partial.end] == "[BEGIN]":
