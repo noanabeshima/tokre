@@ -59,7 +59,7 @@ def pred(module, match_data):
 
 
     if isinstance(match_data, list):
-        assert hasattr(module, 'mixer')
+        assert hasattr(module, 'mixer'), module
         preds =  [torch.tensor(1.)] + [pred(module, data) for data in match_data]
         preds = torch.stack(preds)
         
@@ -69,7 +69,7 @@ def pred(module, match_data):
         match = match_data
 
         assert hasattr(module, 'name_to_submodule')
-        assert match.name in module.name_to_submodule, (match.name, module.name)
+        assert match.name in module.name_to_submodule, (module.name, match.name)
         return pred(module.name_to_submodule[match.name], match.data)
     
     elif match_data is None:
