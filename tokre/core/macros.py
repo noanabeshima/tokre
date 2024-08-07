@@ -60,11 +60,12 @@ class VarVariant(nn.Module):
         return res
 
 
-class VarPrefix(nn.Module):
+
+class VarVariantPrefix(nn.Module):
     def __init__(self, var_ref, max_len=128):
         super().__init__()
         assert isinstance(var_ref, VarRef), var_ref
-        self.name = f"VarPrefix:{var_ref}:{randstr()}"
+        self.name = f"VarVariantPrefix:{var_ref}:{randstr()}"
         self.var_name = var_ref.var_name
         self.var_len_and_prefix_idx = Embed((max_len + 1, max_len + 1))
         self.max_len = max_len
@@ -281,7 +282,7 @@ class LiteralSet(nn.Module):
 
 
 DEFINED_MACROS = {
-    "var_prefix": VarPrefix,
+    "var_variant_prefix": VarVariantPrefix,
     "re": TokRegex,
     "re_tok_set": TokRegexSet,
     "literal_set": LiteralSet,
