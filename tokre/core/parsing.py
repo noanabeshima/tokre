@@ -283,6 +283,7 @@ def parse_line(line: str):
 
 
 def parse(s):
+    s = remove_comments(s)
     parsed_lines = [parse_line(line) for line in s.split("\n") if len(line.strip()) > 0]
     tree = Tree("lines", parsed_lines)
     tree = SimplifyTree().transform(tree)
