@@ -502,7 +502,13 @@ class Lookahead(nn.Module):
             if matches:
                 return []
             else:
-                return [partial]
+                return [PartialMatch(
+                    name=self.name,
+                    start=partial.end,
+                    end=partial.end,
+                    defns=partial.defns,
+                    data=None
+                )]
         else:
             matches = [
                 PartialMatch(
@@ -534,7 +540,7 @@ class Lookbehind(nn.Module):
             name=partial.name,
             start=len(toks)-partial.end,
             end=len(toks)-partial.end,
-            defns=frozendict({k: v[::-1] for k, v in partial.defns}),
+            defns=frozendict({k: v[::-1] for k, v in partial.defns.items()}),
             data=partial.data
         )
 
@@ -543,7 +549,13 @@ class Lookbehind(nn.Module):
             if len(matches) > 0:
                 return []
             else:
-                return [partial]
+                return [PartialMatch(
+                    name=self.name,
+                    start=partial.end,
+                    end=partial.end,
+                    defns=partial.defns,
+                    data=None
+                )]
         else:
             matches = [
                 PartialMatch(
@@ -558,7 +570,7 @@ class Lookbehind(nn.Module):
         return matches
     def extra_repr(self):
         return f'(is_neg): {self.is_neg}'
-            
+
 
 
 
