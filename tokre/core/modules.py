@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from frozendict import frozendict
 
 
-def randstr(length=4):
+def randstr(length=6):
     import random
     import string
 
