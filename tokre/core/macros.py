@@ -30,6 +30,8 @@ class BEGIN(nn.Module):
                     data=None,
                 )
             ]
+        else:
+            return []
 
 
 class VarVariant(nn.Module):
