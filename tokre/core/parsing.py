@@ -282,6 +282,15 @@ def parse_line(line: str):
         return parser.parse(line)
 
 
+def remove_comments(code):
+    # Remove inline comments
+    code = re.sub(r'(?<!\\)#.*', '', code)
+    # # Remove multiline comments
+    # code = re.sub(r'\'\'\'.*?\'\'\'', '', code, flags=re.DOTALL)
+    # code = re.sub(r'\"\"\".*?\"\"\"', '', code, flags=re.DOTALL)
+    return code
+
+
 def parse(s):
     s = remove_comments(s)
     parsed_lines = [parse_line(line) for line in s.split("\n") if len(line.strip()) > 0]
