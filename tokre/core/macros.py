@@ -270,4 +270,4 @@ class LiteralSet(nn.Module):
 
 
 
-DEFINED_MACROS = {"var_prefix": VarPrefix, "re": TokRegex}
+DEFINED_MACROS = {"var_prefix": VarPrefix, "re": TokRegex, 're_tok_set': TokRegexSet, 'literal_set': LiteralSet, 'prefix': Prefix, 'var_variant': VarVariant, 'BEGIN': BEGIN}
