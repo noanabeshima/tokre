@@ -11,6 +11,11 @@ from frozendict import frozendict
 
 from typing import Iterable
 
+import ray
+from tqdm import tqdm
+
+ray.init(ignore_reinit_error=True)
+
 def collect_matches(module, toks, aggr='longest'):
     assert aggr in ['shortest', 'longest']
     starting_matches = [
@@ -36,6 +41,7 @@ def collect_matches(module, toks, aggr='longest'):
             end_to_aggr_match[match.end] = match
     
     return list(end_to_aggr_match.values())
+
 
 def is_int_or_tuple_of_ints(data):
     return isinstance(data, int) or (isinstance(data, tuple) and all([isinstance(x, int) for x in data]))
@@ -71,30 +77,55 @@ def pred(module, match_data):
     
     else:
         raise ValueError('Unexpected match_data', match_data)
+    
+@ray.remote(num_cpus=1)
+class ParallelModule:
+    def __init__(self, module, aggr):
+        self.module = module
+        self.aggr=aggr
+    def get_matches(self, docs):
+        assert not isinstance(docs[0], str) and isinstance(docs[0], Iterable)
+        matches = [collect_matches(self.module, toks=doc, aggr=self.aggr) for doc in docs]
+        return matches
 
 
 class SynthFeat(nn.Module):
-    def __init__(self, script, aggr='longest'):
+    def __init__(self, script, aggr='longest', n_actors=10, batch_size=100):
         super().__init__()
         assert aggr in ['longest', 'shortest']
         self.module = tokre.compile(script)
         self.aggr=aggr
-        self.optimizer = AdamWScheduleFree(self.module.parameters(), lr=1e-2)
+        self.optimizer = AdamWScheduleFree(self.module.parameters(), lr=1e-3)
+        
+        self.parallel_matchers = [ParallelModule.remote(self.module, self.aggr) for _ in range(n_actors)]
+        self.batch_size=batch_size
         
     def get_matches(self, toks: list[str]):
+        if isinstance(toks[0], list) or (isinstance(toks, np.ndarray) and len(toks.shape) == 2):
+            docs = toks
+            batched_docs = [docs[i:i+self.batch_size] for i in range(0, len(docs), self.batch_size)]
+            batched_matches = ray.get([self.parallel_matchers[i%len(self.parallel_matchers)].get_matches.remote(batch) for i, batch in enumerate(batched_docs)])
+            per_doc_matches = [match for batch in batched_matches for match in batch]
+            return per_doc_matches
+
         matches = collect_matches(self.module, toks=toks, aggr=self.aggr)
         return matches
         
-    def get_act_mask(self, toks: Iterable):
+    def get_mask(self, toks: Iterable):
         if isinstance(toks[0], Iterable) and not isinstance(toks[0], str):
             assert all([isinstance(tok, str) for tok in toks[0]])
-            mask = torch.stack([self.get_act_mask(row) for row in toks], dim=0)
+            matches = self.get_matches(toks)
+            mask = torch.zeros((len(toks), len(toks[0])))
+            for doc_idx, doc_matches in enumerate(matches):
+                for match in doc_matches:
+                    mask[doc_idx, match.end-1] = 1.
+            return mask
         else:
             matches = self.get_matches(toks)
             mask = torch.zeros(len(toks))
             for match in matches:
                 mask[match.end-1] = 1.
-        
+
         return mask
 
     @torch.no_grad()
@@ -112,11 +143,13 @@ class SynthFeat(nn.Module):
             return torch.stack([self.get_acts(doc) for doc in toks], dim=0)
 
     def train(self, toks, acts):
-        for doc, doc_acts in zip(toks, acts):
-            synth_matches = self.get_matches(doc)
-            for match in synth_matches:
+        print('getting matches')
+        all_matches = self.get_matches(toks)
+        print('training')
+        for doc_matches, doc_acts in tqdm(zip(all_matches, acts)):
+            for match in doc_matches:
                 act = doc_acts[match.end-1]
-                loss = ((pred(self.module, match.data)-act)**2)
+                loss = (pred(self.module, match.data)-act).abs()
 
                 self.optimizer.zero_grad()
                 loss.backward()
