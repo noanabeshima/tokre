@@ -1,6 +1,6 @@
 import os
 from tokre.setup import setup
-from tokre.core.parsing import parse
+from tokre.core.parsing import parse, escape
 from tokre.core.tree_to_module import tree_to_module, compile
 from tokre.core.synth_feat import SynthFeat, collect_matches
 
