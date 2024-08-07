@@ -1,4 +1,5 @@
 import hashlib
+import json
 from queue import Queue
 from threading import Thread
 
@@ -114,3 +115,18 @@ def format_nest(nest, **kwargs):
         }
     elif isinstance(nest, str):
         return nest.format(**kwargs)
+
+
+def assert_snake_case(s):
+    assert "-" not in s, "snake_case please"
+    assert " " not in s, "snake_case please"
+    assert s.lower() == s, "snake_case please"
+
+def save_dict(d, fname):
+    s = '{'
+    for k, v in d.items():
+        s += '\n  '+f'"{k}": '+json.dumps(v)+','
+    s = s[:-1]
+    s += '\n}\n'
+    with open(fname, 'w') as f:
+        f.write(s)
