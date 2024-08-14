@@ -193,23 +193,26 @@ class TokRegexSet(nn.Module):
 
 
 class Prefix(nn.Module):
-    def __init__(self, child_module):
+    def __init__(self, child_module, max_len=10):
         super().__init__()
         self.name = f"Prefix:{randstr()}"
         self.child_module = child_module
+        self.max_len = max_len
+        self.match_len_and_prefix_len = Embed((max_len, max_len))
+        self.mixer = Mixer(2, linear=True, bilinear=True)
 
     def matches(self, toks, partial, reversed):
         matches = self.child_module.matches(toks, partial, reversed)
         res = []
         for match in matches:
-            for i in range(match.start + 1, match.end + 1):
+            for prefix_end in range(match.start+1, match.end+1):
                 res.append(
                     PartialMatch(
                         name=self.name,
                         start=match.start,
-                        end=i,
+                        end=prefix_end,
                         defns=match.defns,
-                        data=match,
+                        data=[match, self.match_len_and_prefix_len(match.end-match.start, prefix_end - match.start)]
                     )
                 )
         return res
