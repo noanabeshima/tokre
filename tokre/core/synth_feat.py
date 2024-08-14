@@ -169,11 +169,20 @@ class SynthFeat(nn.Module):
             for match in matches:
                 prediction = pred(self.module, match.data)
                 synth_acts[match.end - 1] = prediction
-            return synth_acts
         else:
             assert isinstance(toks, Iterable)
             assert isinstance(toks[0], Iterable)
-            return torch.stack([self.get_acts(doc) for doc in toks], dim=0)
+            # return torch.stack([self.get_acts(doc) for doc in toks], dim=0)
+            synth_acts = torch.zeros((len(toks), len(toks[0])))
+            doc_matches = self.get_matches(toks)
+            for doc_idx, matches in enumerate(doc_matches):
+                for match in matches:
+                    with torch.no_grad():
+                        prediction = pred(self.module, match.data)
+                        synth_acts[doc_idx, match.end-1] = prediction
+        
+        return synth_acts
+
 
     def train(self, toks, acts):
         print("getting matches")
