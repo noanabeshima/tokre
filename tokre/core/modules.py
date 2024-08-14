@@ -345,7 +345,7 @@ class Wildcard(nn.Module):
                     start=partial.end,
                     end=partial.end + 1,
                     defns=partial.defns,
-                    data=partial.data,
+                    data=None
                 )
             ]
         else:
