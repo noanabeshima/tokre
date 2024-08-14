@@ -33,6 +33,24 @@ class BEGIN(nn.Module):
         else:
             return []
 
+class AbsPos(nn.Module):
+    def __init__(self, max_pos_idx=129):
+        super().__init__()
+        self.name = f"pos:{randstr()}"
+        self.pos_embed = Embed(max_pos_idx)
+
+    def matches(self, toks, partial, reversed):
+        return [
+            PartialMatch(
+                name=self.name,
+                start=partial.end,
+                end=partial.end,
+                defns=partial.defns,
+                data=self.pos_embed(partial.end),
+            )
+        ]
+
+
 
 class VarVariant(nn.Module):
     def __init__(self, var_ref):
@@ -279,6 +297,41 @@ class LiteralSet(nn.Module):
             )
 
         return res
+    
+from frozendict import frozendict
+
+class Redefine(nn.Module):
+    def __init__(self, var_name: str, new_var_name: str, ):
+        self.name = f'Redefine:{randstr()}'
+        self.var_name = var_name
+        self.new_var_name = new_var_name
+
+    def matches(self, toks, partial, reversed):
+        if self.var_name in partial.defns:
+            new_defns = {k: v for (k, v) in partial.defns.items() if k != self.var_name}
+            new_defns[self.new_var_name] = partial.defns[self.var_name]
+            return [
+                PartialMatch(
+                    name=self.name,
+                    start=partial.end,
+                    end=partial.end,
+                    defns = frozendict(new_defns),
+                    data=None
+                )
+            ]
+        else:
+            return [
+                PartialMatch(
+                    name=self.name,
+                    start=partial.end,
+                    end=partial.end,
+                    defns = partial.defns,
+                    data=None
+                )
+            ]
+
+        
+
 
 
 DEFINED_MACROS = {
@@ -289,4 +342,6 @@ DEFINED_MACROS = {
     "prefix": Prefix,
     "var_variant": VarVariant,
     "BEGIN": BEGIN,
+    "redefine": Redefine,
+    "pos": AbsPos,
 }
