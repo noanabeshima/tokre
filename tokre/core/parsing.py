@@ -128,7 +128,9 @@ class SimplifyTree(Transformer):
     def char_seq(self, children):
         s = ""
         for child in children:
-            assert isinstance(child, lark.lexer.Token)
+            assert isinstance(child, lark.lexer.Token) or\
+                isinstance(child, int),\
+                    child
             child_str = str(child)
 
             if len(child_str) == 2 and child_str[0] == "\\":
