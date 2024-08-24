@@ -13,7 +13,7 @@ from tokre.core.modules import (
 from tokre.core.macros import DEFINED_MACROS
 from tokre.core.parsing import parse
 from lark import Transformer
-import tiny_model
+import tokre
 
 
 class InsertModules(Transformer):
@@ -25,9 +25,8 @@ class InsertModules(Transformer):
     def string(self, children):
         assert len(children) == 1, children
         assert isinstance(children[0], str)
-        toks = tiny_model.raw_toks[
-            tiny_model.enc(stories=children)[0].tolist()
-        ].tolist()
+        
+        toks = [tokre.dec([tok_id]) for tok_id in list(tokre.enc(children[0]))]
         return Toks(toks=toks)
 
     def wildcard(self, children):

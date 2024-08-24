@@ -1,11 +1,10 @@
 from tokre.core.modules import Embed, Mixer, VarRef, PartialMatch, randstr, toks_eq
 from torch import nn
-import tiny_model
 
 
 def tok_split(s):
-    tok_ids = tiny_model.enc(s)[0]
-    return tiny_model.raw_toks[tok_ids.tolist()].tolist()
+    tok_ids = tokre.enc(s)[0]
+    return [tokre.dec([tok_id]) for tok_id in tok_ids.tolist()]
 
 
 def get_literal_variants(tok_literal: list[str]):
