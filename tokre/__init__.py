@@ -9,27 +9,30 @@ from tokre.core.pyregex import pyregex_literal
 
 from tokre.labelling.create_label import create_label, get_all_toks
 
-_tokenizer = None
-_workspace = None
-_openai_api_key = os.environ.get("OPENAI_API_KEY", None)
+# See https://stackoverflow.com/a/35904211/10222613
+# I think this avoids import cycle issues
+import sys
+this = sys.modules[__name__]
+
+this._tokenizer = None
+this._workspace = None
+this._openai_api_key = os.environ.get("OPENAI_API_KEY", None)
 
 
 def get_tokenizer():
-    global _tokenizer
-    if _tokenizer is None:
+    if this._tokenizer is None:
         raise ValueError(
             "Tokenizer not initialized. Call `tokre.setup(tokenizer=your_tokenizer)` first."
         )
-    return _tokenizer
+    return this._tokenizer
 
 
 def get_workspace(assert_exists=True):
-    global _workspace
-    if _workspace is None and assert_exists is True:
+    if this._workspace is None and assert_exists is True:
         raise ValueError(
             "Workspace not initialized. Call `tokre.setup(tokenizer=your_tokenizer, workspace='your_workspace')` first."
         )
-    return _workspace
+    return this._workspace
 
 
 def encode(text):
