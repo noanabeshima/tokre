@@ -62,3 +62,4 @@ def tok_split(s: str):
     tok_ids = encode(s)
     tok_strs = [decode([tok_id]) for tok_id in tok_ids]
     return tok_strs
+
