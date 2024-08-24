@@ -34,11 +34,17 @@ def get_workspace(assert_exists=True):
         )
     return this._workspace
 
+import transformers
+import tokenizers
 
 def encode(text):
     tokenizer = get_tokenizer()
+    
+    enc_kwargs = {'add_special_tokens': False}\
+        if isinstance(tokenizer, (transformers.PreTrainedTokenizer, transformers.PreTrainedTokenizerFast, tokenizers.Tokenizer))\
+        else {}
 
-    return tokenizer.encode(text)
+    return tokenizer.encode(text, **enc_kwargs)
 
 
 enc = encode
