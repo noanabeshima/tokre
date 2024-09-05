@@ -2,17 +2,21 @@ from tokre import SynthFeat
 from typing import Iterable
 import torch
 import tokre
+from tqdm import tqdm
 
 
-def get_word_counts(dataloader: Iterable[list[list[str]]]):
-    word_synth = SynthFeat(
+def get_word_counts(dataset):
+    '''
+    Takes a transformers dataset with a text column, splits up each string into token strings using the tokre-setup tokenizer, and extracts word counts.
+    '''
+    word_synth = tokre.SynthFeat(
         r"""
-valid_last_tok = (?<![re `[.,?!"';:#$^&*()-]|\[UNK\]` search=True])
+valid_last_tok = (?<![re `[.,?!"';:\#$^&*()-]` search=True])
 space_tok = [re ` [\S]+`][valid_last_tok]
 nospace_tok = [re `[\S]+`][valid_last_tok]
 capitalized_nospace_tok = [re `[A-Z].*`]
 
-nospace_word = (?<=\n|[re `["]` search=True])[capitalized_nospace_tok][nospace_tok]*(?=[space_tok])
+nospace_word = (?<=(\n)|[re `["]` search=True])[capitalized_nospace_tok][nospace_tok]*(?=[space_tok])
 space_word = [space_tok][nospace_tok]*(?=[space_tok])
 
 word = [nospace_word] | [space_word]
@@ -23,12 +27,17 @@ word = [nospace_word] | [space_word]
 
     word_counts = {}
 
-    for docs in dataloader:
-        per_doc_matches = word_synth.get_matches(docs)
+    for item in tqdm(dataset):
+        doc = item['text']
+        try:
+            toks = tokre.tok_split(doc)
+        except Exception as e:
+            print(f"Error tokenizing document: {e}")
+            continue
+        matches = word_synth.get_matches(toks)
         words = [
-            tuple(doc[match.start : match.end].tolist())
-            for doc, doc_matches in zip(docs, per_doc_matches)
-            for match in doc_matches
+            tuple(toks[match.start : match.end])
+            for match in matches
         ]
 
         for word in words:
@@ -47,7 +56,3 @@ word = [nospace_word] | [space_word]
     word_counts = [(word, count) for word, count in zip(words, counts)]
 
     return word_counts
-
-
-def save_literal_set(literals: list[tuple[str]]):
-    ws = tokre.get_workspace()
