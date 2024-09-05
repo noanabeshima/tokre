@@ -11,7 +11,7 @@ grammar = r"""
 
     NUMBER: INT
     WILDCARD: /[.]/
-    ESCAPED: /\\[*+|.()\[\]{}?=<>\\0-9]/
+    ESCAPED: /\\[*+|.()\[\]{}?=<>\\0-9n]/
 
     REPEAT_POSTFIX.1: /[+*?]/ | "{" SPACES? ( NUMBER? SPACES? "," SPACES? NUMBER | NUMBER SPACES? "," NUMBER? | NUMBER) SPACES? "}"
 
