@@ -129,10 +129,7 @@ class TokRegex(nn.Module):
         self.search = search
 
     def matches(self, toks, partial, reversed):
-        if partial.end == len(toks) and not reversed:
-            return []
-
-        if partial.end == len(toks) and reversed:
+        if partial.end == len(toks):
             return []
 
         tok = toks[partial.end]
