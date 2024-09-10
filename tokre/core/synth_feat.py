@@ -98,9 +98,11 @@ def pred(module, match_data):
 
 @ray.remote(num_cpus=1)
 class ParallelModule:
-    def __init__(self, module, aggr):
+    def __init__(self, module, aggr, tokenizer):
         self.module = module
         self.aggr = aggr
+        import tokre
+        tokre.setup(tokenizer=tokenizer, workspace='workspace')
 
     def get_matches(self, docs):
         assert not isinstance(docs[0], str) and isinstance(docs[0], Iterable)
@@ -118,25 +120,26 @@ class SynthFeat(nn.Module):
         self.aggr = aggr
         self.optimizer = AdamWScheduleFree(self.module.parameters(), lr=1e-3)
 
-        self.parallel_matchers = [
-            ParallelModule.remote(self.module, self.aggr) for _ in range(n_actors)
-        ]
         self.batch_size = batch_size
 
-    def get_matches(self, toks: list[str], parallel=True):
+    def get_matches(self, toks: list[str], n_matchers=1):
+        if n_matchers > 1:
+            parallel_matchers = [
+                ParallelModule.remote(self.module, self.aggr, tokre.get_tokenizer()) for _ in range(n_matchers)
+            ]
         if isinstance(toks[0], list) or (
             isinstance(toks, np.ndarray) and len(toks.shape) == 2
         ):
             docs = toks
-            if parallel:
+            if n_matchers > 1:
                 batched_docs = [
                     docs[i : i + self.batch_size]
                     for i in range(0, len(docs), self.batch_size)
                 ]
                 batched_matches = ray.get(
                     [
-                        self.parallel_matchers[
-                            i % len(self.parallel_matchers)
+                        parallel_matchers[
+                            i % len(parallel_matchers)
                         ].get_matches.remote(batch)
                         for i, batch in enumerate(batched_docs)
                     ]
@@ -151,17 +154,17 @@ class SynthFeat(nn.Module):
         matches = collect_matches(self.module, toks=toks, aggr=self.aggr)
         return matches
 
-    def get_mask(self, toks: Iterable):
+    def get_mask(self, toks: Iterable, n_matchers=1):
         if isinstance(toks[0], Iterable) and not isinstance(toks[0], str):
             assert all([isinstance(tok, str) for tok in toks[0]])
-            matches = self.get_matches(toks)
+            matches = self.get_matches(toks,n_matchers=n_matchers)
             mask = torch.zeros((len(toks), len(toks[0])))
             for doc_idx, doc_matches in enumerate(matches):
                 for match in doc_matches:
                     mask[doc_idx, match.end - 1] = 1.0
             return mask
         else:
-            matches = self.get_matches(toks)
+            matches = self.get_matches(toks, n_matchers=1)
             mask = torch.zeros(len(toks))
             for match in matches:
                 mask[match.end - 1] = 1.0
@@ -169,10 +172,10 @@ class SynthFeat(nn.Module):
         return mask
 
     @torch.no_grad()
-    def get_acts(self, toks, parallel=True):
+    def get_acts(self, toks, n_matchers=1):
         if isinstance(toks, Iterable) and isinstance(toks[0], str):
             synth_acts = torch.zeros(len(toks))
-            matches = self.get_matches(toks)
+            matches = self.get_matches(toks, n_matchers=n_matchers)
             for match in matches:
                 prediction = pred(self.module, match.data)
                 synth_acts[match.end - 1] = prediction
@@ -181,7 +184,7 @@ class SynthFeat(nn.Module):
             assert isinstance(toks[0], Iterable)
             # return torch.stack([self.get_acts(doc) for doc in toks], dim=0)
             synth_acts = torch.zeros((len(toks), len(toks[0])))
-            doc_matches = self.get_matches(toks, parallel=parallel)
+            doc_matches = self.get_matches(toks, n_matchers=n_matchers)
             for doc_idx, matches in enumerate(doc_matches):
                 for match in matches:
                     with torch.no_grad():
