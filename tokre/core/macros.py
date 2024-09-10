@@ -3,8 +3,8 @@ from torch import nn
 
 
 def tok_split(s):
-    tok_ids = tokre.enc(s)[0]
-    return [tokre.dec([tok_id]) for tok_id in tok_ids.tolist()]
+    tok_ids = tokre.enc(s)
+    return [tokre.dec([tok_id]) for tok_id in tok_ids]
 
 
 def get_literal_variants(tok_literal: list[str]):
