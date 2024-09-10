@@ -132,18 +132,20 @@ class SimplifyTree(Transformer):
                 isinstance(child, int),\
                     child
             child_str = str(child)
-
+    
             if len(child_str) == 2 and child_str[0] == "\\":
-                child_str = child_str[-1]
+                if child_str[1] == 'n':
+                    child_str = '\n'
+                else:
+                    child_str = child_str[-1]
 
             s += child_str
-        if len(s.strip()) == 0:
+        if len(s.replace('\n', '↵').strip()) == 0:
             return Discard
 
-        s = s.rstrip()
+        s = s.rstrip(' ')
         if s[0] == " ":
             s = " " + s.lstrip()
-        s.replace(r"\n", "\n")
         return Tree("string", [s])
 
     def identifier_chars(self, chars):
