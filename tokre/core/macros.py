@@ -151,6 +151,50 @@ class TokRegex(nn.Module):
         else:
             return []
 
+class FlexRegex(nn.Module):
+    def __init__(self, pattern, search=False):
+        super().__init__()
+        self.name = f"FlexRegex:{pattern}:{randstr()}"
+        self.pattern = pattern
+        self.search = search
+        self.spacing = Embed(2)
+        self.capitalization = Embed(6)
+        self.mixer = Mixer(2, linear=True, bilinear=True)
+
+        
+
+    def matches(self, toks, partial, reversed):
+        if partial.end == len(toks):
+            return []
+
+
+        tok = toks[partial.end]
+
+        stripped_tok = tok.strip()
+        normalized_tok = stripped_tok.lower()
+        
+
+        if (self.search and re.search(self.pattern, normalized_tok)) or re.fullmatch(
+            self.pattern, normalized_tok
+        ):
+            capitalization = 0 if len(stripped_tok) == 0 else\
+                  1 if stripped_tok.islower() else\
+                  2 if stripped_tok.isupper() else\
+                  3 if (stripped_tok[0].isupper() and len(stripped_tok) > 1 and stripped_tok[1:].islower()) else\
+                  4 if stripped_tok[0].isupper() else\
+                  5
+            return [
+                PartialMatch(
+                    name=self.name,
+                    start=partial.end,
+                    end=partial.end + 1,
+                    defns=partial.defns,
+                    data=[self.spacing(int(tok[0] == ' ')), self.capitalization(capitalization)],
+                )
+            ]
+        else:
+            return []
+
 
 class TokRegexSet(nn.Module):
     def __init__(self, pattern, search=False):
@@ -346,4 +390,5 @@ DEFINED_MACROS = {
     "BEGIN": BEGIN,
     "redefine": Redefine,
     "pos": AbsPos,
+    'flex': FlexRegex
 }
