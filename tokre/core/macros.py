@@ -274,29 +274,29 @@ class TrieNode:
 
 
 class Trie:
-    def __init__(self, string_lists, values=None):
+    def __init__(self, literals, values=None):
         self.root = TrieNode()
         if values is None:
-            values = string_lists
-        for string_list, value in zip(string_lists, values):
-            self.insert(string_list, value)
+            values = literals
+        for literal, value in zip(literals, values):
+            self.insert(literal, value)
 
-    def insert(self, string_list, value):
+    def insert(self, literal, value):
         node = self.root
-        for string in string_list:
-            if string not in node.children:
-                node.children[string] = TrieNode()
-            node = node.children[string]
+        for tok_string in literal:
+            if tok_string not in node.children:
+                node.children[tok_string] = TrieNode()
+            node = node.children[tok_string]
         node.is_end = True
         node.value = value
 
-    def prefixes(self, string_list):
+    def prefixes(self, token_strs):
         result = []
         node = self.root
-        for i, string in enumerate(string_list):
-            if string not in node.children:
+        for i, tok_string in enumerate(token_strs):
+            if tok_string not in node.children:
                 break
-            node = node.children[string]
+            node = node.children[tok_string]
             if node.is_end:
                 result.append(node.value)
         return result
