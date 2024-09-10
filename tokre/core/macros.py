@@ -312,9 +312,9 @@ class LiteralSet(nn.Module):
         with open(tokre.get_workspace() / (literal_name + ".json")) as f:
             data = json.load(f)
         assert isinstance(data, dict)
-        assert "literal_set" in data
+        assert "literal_toks" in data
 
-        self.literal_set = [tuple(it) for it in data["literal_set"]]
+        self.literal_set = [tuple(it) for it in data["literal_toks"]]
         self.trie = Trie(self.literal_set)
 
         self.reversed_trie = Trie([toks[::-1] for toks in self.literal_set])
