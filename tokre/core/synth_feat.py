@@ -14,8 +14,10 @@ from typing import Iterable
 import ray
 from tqdm import tqdm
 
-ray.init(ignore_reinit_error=True)
-
+# Initialize Ray, using most available CPUs and ignoring reinit errors
+import multiprocessing
+num_cpus = max(1, multiprocessing.cpu_count() - 1)  # Leave one CPU free
+ray.init(num_cpus=num_cpus, ignore_reinit_error=True)
 
 def collect_matches(module, toks, aggr="longest"):
     assert aggr in ["shortest", "longest"]
