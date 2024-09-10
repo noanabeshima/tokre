@@ -8,6 +8,7 @@ from tokre.core.modules import EmbedData, PredData, PartialMatch, Mixer
 from tokre.core.pyregex import pyregex_literal
 
 from tokre.labelling.create_label import create_label, get_all_toks
+from tokre.labelling.literal_set_utils import load_literal_set, save_literal_set
 from tokre.labelling.get_words import get_word_counts
 
 # See https://stackoverflow.com/a/35904211/10222613

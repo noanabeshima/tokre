@@ -240,7 +240,8 @@ def create_label(
             "n_passes": n_passes,
             "inclusion_threshold": inclusion_threshold,
         },
-        "literal_set": literal_set,
+        "literal_toks": literal_set,
+        "literal_strs": identified_strs,
         "pattern": r"(" + "|".join(escaped_identified_strs) + r")",
     }
 
