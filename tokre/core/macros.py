@@ -81,9 +81,10 @@ class VarVariant(nn.Module):
 class VarVariantPrefix(nn.Module):
     def __init__(self, var_ref, max_len=128):
         super().__init__()
-        assert isinstance(var_ref, VarRef), var_ref
-        self.name = f"VarVariantPrefix:{var_ref}:{randstr()}"
-        self.var_name = var_ref.var_name
+        assert isinstance(var_ref, VarRef) or isinstance(var_ref, str), var_ref
+        self.name = f"VarVariantPrefix:{str(var_ref)}:{randstr()}"
+        
+        self.var_name = str(var_ref) if isinstance(var_ref, str) else var_ref.var_name
         self.var_len_and_prefix_idx = Embed((max_len + 1, max_len + 1))
         self.max_len = max_len
 
