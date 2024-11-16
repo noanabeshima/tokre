@@ -11,13 +11,13 @@ from frozendict import frozendict
 
 from typing import Iterable
 
-import ray
+# import ray
 from tqdm import tqdm
 
 # Initialize Ray, using most available CPUs and ignoring reinit errors
-import multiprocessing
+# import multiprocessing
 # num_cpus = max(1, multiprocessing.cpu_count() - 1)  # Leave one CPU free
-ray.init(ignore_reinit_error=True)#, _temp_dir="/media/noa/nvme_ssd/tmp")
+# ray.init(ignore_reinit_error=True)#, _temp_dir="/media/noa/nvme_ssd/tmp")
 
 def collect_matches(module, toks, aggr="longest"):
     assert aggr in ["shortest", "longest"]
@@ -96,22 +96,22 @@ def pred(module, match_data):
         raise ValueError("Unexpected match_data", match_data)
 
 
-@ray.remote(num_cpus=1)
-class ParallelModule:
-    def __init__(self, module, aggr, tokenizer):
-        self.module = module
-        self.aggr = aggr
-        print('initializing parallel module')
-        import tokre
-        tokre.setup(tokenizer=tokenizer)
-        print('initialized')
+# @ray.remote(num_cpus=1)
+# class ParallelModule:
+#     def __init__(self, module, aggr, tokenizer):
+#         self.module = module
+#         self.aggr = aggr
+#         print('initializing parallel module')
+#         import tokre
+#         tokre.setup(tokenizer=tokenizer)
+#         print('initialized')
 
-    def get_matches(self, docs):
-        assert not isinstance(docs[0], str) and isinstance(docs[0], Iterable)
-        matches = [
-            collect_matches(self.module, toks=doc, aggr=self.aggr) for doc in docs
-        ]
-        return matches
+#     def get_matches(self, docs):
+#         assert not isinstance(docs[0], str) and isinstance(docs[0], Iterable)
+#         matches = [
+#             collect_matches(self.module, toks=doc, aggr=self.aggr) for doc in docs
+#         ]
+#         return matches
 
 
 class SynthFeat(nn.Module):
@@ -124,41 +124,42 @@ class SynthFeat(nn.Module):
 
         self.batch_size = batch_size
 
-    def get_matches(self, toks: list[str], n_matchers=1):            
+    def get_matches(self, toks: list[str], n_matchers=1):
+        assert n_matchers = 1          
         if isinstance(toks[0], list) or (
             isinstance(toks, np.ndarray) and len(toks.shape) == 2
         ):
             # toks is a list of documents
             docs = toks
-            if n_matchers > 1:
-                print('creating parallel matchers')
-                module_ref = ray.put(self.module)
-                tokenizer_ref = ray.put(tokre.get_tokenizer())
-                # tokre_ref = ray.put(tokre)
-                parallel_matchers = [
-                    ParallelModule.remote(module_ref, self.aggr, tokenizer_ref) for _ in range(n_matchers)
-                ]
-                print('created parallel matchers')
-                batched_docs = [
-                    docs[i : i + self.batch_size]
-                    for i in range(0, len(docs), self.batch_size)
-                ]
-                print('created batches')
-                batched_matches = []
-                K = 1  # Number of batches to process before waiting
-                for i in range(0, len(batched_docs), K * len(parallel_matchers)):
-                    batch_futures = [
-                        parallel_matchers[j % len(parallel_matchers)].get_matches.remote(batched_docs[i + j])
-                        for j in range(min(K * len(parallel_matchers), len(batched_docs) - i))
-                    ]
-                    batched_matches.extend(ray.get(batch_futures))
-                print('got matches')
-                per_doc_matches = [match for batch in batched_matches for match in batch]
-                return per_doc_matches
-            else:
-                pbar = tqdm(docs, desc='collecting matches')
-                per_doc_matches = [collect_matches(self.module, toks=doc, aggr=self.aggr) for doc in pbar]
-                return per_doc_matches
+            # if n_matchers > 1:
+            #     print('creating parallel matchers')
+            #     # module_ref = ray.put(self.module)
+            #     # tokenizer_ref = ray.put(tokre.get_tokenizer())
+            #     # tokre_ref = ray.put(tokre)
+            #     parallel_matchers = [
+            #         ParallelModule.remote(module_ref, self.aggr, tokenizer_ref) for _ in range(n_matchers)
+            #     ]
+            #     print('created parallel matchers')
+            #     batched_docs = [
+            #         docs[i : i + self.batch_size]
+            #         for i in range(0, len(docs), self.batch_size)
+            #     ]
+            #     print('created batches')
+            #     batched_matches = []
+            #     K = 1  # Number of batches to process before waiting
+            #     for i in range(0, len(batched_docs), K * len(parallel_matchers)):
+            #         batch_futures = [
+            #             parallel_matchers[j % len(parallel_matchers)].get_matches.remote(batched_docs[i + j])
+            #             for j in range(min(K * len(parallel_matchers), len(batched_docs) - i))
+            #         ]
+            #         batched_matches.extend(ray.get(batch_futures))
+            #     print('got matches')
+            #     per_doc_matches = [match for batch in batched_matches for match in batch]
+            #     return per_doc_matches
+            # else:
+            pbar = tqdm(docs, desc='collecting matches')
+            per_doc_matches = [collect_matches(self.module, toks=doc, aggr=self.aggr) for doc in pbar]
+            return per_doc_matches
 
         matches = collect_matches(self.module, toks=toks, aggr=self.aggr)
         return matches
