@@ -383,6 +383,7 @@ DEFINED_MACROS = {
     "re": TokRegex,
     "re_tok_set": TokRegexSet,
     "literal_set": LiteralSet,
+    "literals": LiteralSet,
     "prefix": Prefix,
     "var_variant": VarVariant,
     "BEGIN": BEGIN,
