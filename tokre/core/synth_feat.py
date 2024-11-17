@@ -125,7 +125,7 @@ class SynthFeat(nn.Module):
         self.batch_size = batch_size
 
     def get_matches(self, toks: list[str], n_matchers=1):
-        assert n_matchers = 1          
+        assert n_matchers == 1          
         if isinstance(toks[0], list) or (
             isinstance(toks, np.ndarray) and len(toks.shape) == 2
         ):
