@@ -193,11 +193,6 @@ def batched_extend_matches(
     return new_partials
 
 
-# def pyregex_literal(toks):
-#     # [STUB]
-#     return "".join(toks)
-from tokre.core.pyregex import pyregex_literal
-
 
 def toks_eq(toks_a: list[str], toks_b: list[str]):
     return (len(toks_a) == len(toks_b)) and all(
@@ -225,9 +220,6 @@ class Toks(nn.Module):
         else:
             return []
 
-    @property
-    def pyregex(self):
-        return pyregex_literal(self.toks)
 
     def __repr__(self):
         return f"Toks({self.toks})"
@@ -289,19 +281,6 @@ class Repeat(nn.Module):
         return f"""(min): {self.min}
 (max): {self.max}"""
 
-    @property
-    def pyregex(self):
-        pyregex_max = "" if self.max == Inf else str(self.max)
-        return (
-            f"({self.child_matcher.pyregex})"
-            + r"{"
-            + str(self.min)
-            + ","
-            + pyregex_max
-            + r"}"
-        )
-
-
 class Phrase(nn.Module):
     def __init__(self, matchers, name=None):
         super().__init__()
@@ -327,11 +306,6 @@ class Phrase(nn.Module):
             )
         return partials
 
-    @property
-    def pyregex(self):
-        return f"({''.join([child.pyregex for child in self.matchers])})"
-
-
 class Wildcard(nn.Module):
     def __init__(self, name=None):
         super().__init__()
@@ -350,10 +324,6 @@ class Wildcard(nn.Module):
             ]
         else:
             return []
-
-    @property
-    def pyregex(self):
-        return f"."
 
 
 class OrGroup(nn.Module):
@@ -381,11 +351,6 @@ class OrGroup(nn.Module):
                 )
         return res
 
-    @property
-    def pyregex(self):
-        return f"({'|'.join([child.pyregex for child in self.branches])})"
-
-
 class VarDefn(nn.Module):
     def __init__(self, var_name, child_matcher, name=None):
         super().__init__()
@@ -409,10 +374,6 @@ class VarDefn(nn.Module):
             )
 
         return res
-
-    @property
-    def pyregex(self):
-        f"(?P<{self.var_name}>{self.child_matcher.pyregex})"
 
     def extra_repr(self):
         return f"(var_name): '{self.var_name}'"
@@ -606,7 +567,3 @@ class LearnedConst(nn.Module):
             for match in matches
         ]
         return matches
-
-    @property
-    def pyregex(self):
-        return self.child_module.pyregex

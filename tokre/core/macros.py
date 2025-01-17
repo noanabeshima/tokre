@@ -1,19 +1,27 @@
+"""
+This module defines various custom matching modules and utilities for the tokre pattern matching system.
+It includes modules for handling token variants, regular expressions, literal sets, and other pattern matching operations.
+"""
+
 from tokre.core.modules import Embed, Mixer, VarRef, PartialMatch, randstr, toks_eq
 from torch import nn
 
 
 def tok_split(s):
+    """Split a string into tokens using the tokre tokenizer."""
     tok_ids = tokre.enc(s)
     return [tokre.dec([tok_id]) for tok_id in tok_ids]
 
 
 def get_literal_variants(tok_literal: list[str]):
+    """Get variants of a token literal with and without leading space."""
     literal_str = ("".join(tok_literal)).strip()
     variants = [tok_split(literal_str), tok_split(" " + literal_str)]
     return variants
 
 
 class BEGIN(nn.Module):
+    """Module that matches a special [BEGIN] token."""
     def __init__(self):
         super().__init__()
         self.name = f"BEGIN:{randstr()}"
@@ -33,6 +41,7 @@ class BEGIN(nn.Module):
             return []
 
 class AbsPos(nn.Module):
+    """Module that embeds absolute positions in the token sequence."""
     def __init__(self, max_pos_idx=129):
         super().__init__()
         self.name = f"pos:{randstr()}"
@@ -52,6 +61,7 @@ class AbsPos(nn.Module):
 
 
 class VarVariant(nn.Module):
+    """Module that matches variants of a variable reference string."""
     def __init__(self, var_ref):
         super().__init__()
         assert isinstance(var_ref, VarRef), var_ref
@@ -79,6 +89,7 @@ class VarVariant(nn.Module):
 
 
 class VarVariantPrefix(nn.Module):
+    """Module that matches prefixes of variable reference variants."""
     def __init__(self, var_ref, max_len=128):
         super().__init__()
         assert isinstance(var_ref, VarRef) or isinstance(var_ref, str), var_ref
@@ -113,15 +124,11 @@ class VarVariantPrefix(nn.Module):
                         )
         return res
 
-    @property
-    def pyregex(self):
-        return r".{0," + str(self.max_len) + r"}"
-
-
 import regex as re
 
 
 class TokRegex(nn.Module):
+    """Module that matches individual tokens using regular expressions."""
     def __init__(self, pattern, search=False):
         super().__init__()
         self.name = f"TokRegex:{pattern}:{randstr()}"
@@ -150,6 +157,7 @@ class TokRegex(nn.Module):
             return []
 
 class FlexRegex(nn.Module):
+    """Module that matches tokens using regular expressions with flexible spacing and capitalization."""
     def __init__(self, pattern, search=False):
         super().__init__()
         self.name = f"FlexRegex:{pattern}:{randstr()}"
@@ -195,6 +203,7 @@ class FlexRegex(nn.Module):
 
 
 class TokRegexSet(nn.Module):
+    """Module that matches tokens from a pre-computed set of tokens matching a regex pattern."""
     def __init__(self, pattern, search=False):
         super().__init__()
         self.name = f"TokRegexSet:{pattern}:{randstr()}"
@@ -234,6 +243,7 @@ class TokRegexSet(nn.Module):
 
 
 class Prefix(nn.Module):
+    """Module that matches prefixes of another module's matches. This is a bit artificial because it requires looking to the future."""
     def __init__(self, child_module, max_len=10):
         super().__init__()
         self.name = f"Prefix:{randstr()}"
@@ -267,6 +277,7 @@ from tokre.core.modules import PartialMatch
 
 
 class TrieNode:
+    """Node in a trie data structure."""
     def __init__(self):
         self.children = {}
         self.is_end = False
@@ -274,6 +285,7 @@ class TrieNode:
 
 
 class Trie:
+    """Trie data structure for efficient prefix matching."""
     def __init__(self, literals, values=None):
         self.root = TrieNode()
         if values is None:
@@ -303,6 +315,7 @@ class Trie:
 
 
 class LiteralSet(nn.Module):
+    """Module that matches literals from a pre-defined set loaded from a JSON file."""
     def __init__(self, literal_name):
         super().__init__()
         self.name = f"Literalset:{literal_name}:{randstr()}"
@@ -345,6 +358,7 @@ class LiteralSet(nn.Module):
 from frozendict import frozendict
 
 class Redefine(nn.Module):
+    """Module that redefines a variable under a new name."""
     def __init__(self, var_name: str, new_var_name: str, ):
         self.name = f'Redefine:{randstr()}'
         self.var_name = var_name
@@ -376,8 +390,7 @@ class Redefine(nn.Module):
 
         
 
-
-
+# Dictionary mapping macro names to their implementing classes
 DEFINED_MACROS = {
     "var_variant_prefix": VarVariantPrefix,
     "re": TokRegex,

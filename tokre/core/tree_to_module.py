@@ -110,10 +110,10 @@ def recursively_add_name_to_submodule(module):
         recursively_add_name_to_submodule(submodule)
 
 
-def compile(s):
-    tree = parse(s)
-    module = tree_to_module(tree)
-    if len(list(module.parameters())) == 0:
-        module = LearnedConst(module)
-    recursively_add_name_to_submodule(module)
-    return module
+# def compile(s):
+#     tree = parse(s)
+#     module = tree_to_module(tree)
+#     if len(list(module.parameters())) == 0:
+#         module = LearnedConst(module)
+#     recursively_add_name_to_submodule(module)
+#     return module

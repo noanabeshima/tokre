@@ -4,7 +4,7 @@ from tokre.core.modules import PartialMatch, EmbedData
 from tokre.core.parsing import parse
 from tokre.core.tree_to_module import compile
 
-from schedulefree import AdamWScheduleFree
+# from schedulefree import AdamWScheduleFree
 import numpy as np
 import torch
 from frozendict import frozendict
@@ -120,7 +120,7 @@ class SynthFeat(nn.Module):
         assert aggr in ["longest", "shortest"]
         self.module = tokre.compile(script)
         self.aggr = aggr
-        self.optimizer = AdamWScheduleFree(self.module.parameters(), lr=1e-3)
+        # self.optimizer = AdamWScheduleFree(self.module.parameters(), lr=1e-3)
 
         self.batch_size = batch_size
 
@@ -193,7 +193,6 @@ class SynthFeat(nn.Module):
         else:
             assert isinstance(toks, Iterable)
             assert isinstance(toks[0], Iterable)
-            # return torch.stack([self.get_acts(doc) for doc in toks], dim=0)
             synth_acts = torch.zeros((len(toks), len(toks[0])))
             doc_matches = self.get_matches(toks, n_matchers=n_matchers)
             for doc_idx, matches in enumerate(doc_matches):
@@ -205,21 +204,18 @@ class SynthFeat(nn.Module):
         return synth_acts
 
 
-    def train(self, toks, acts, parallel=True):
-        from noa_tools import see
-        print("getting matches")
-        all_matches = self.get_matches(toks, parallel=parallel)
-        print("training")
-        for doc_matches, doc_acts in tqdm(zip(all_matches, acts)):
-            for match in doc_matches:
-                act = doc_acts[match.end - 1]
+    # def train(self, toks, acts, parallel=True):
+    #     from noa_tools import see
+    #     print("getting matches")
+    #     all_matches = self.get_matches(toks, parallel=parallel)
+    #     print("training")
+    #     for doc_matches, doc_acts in tqdm(zip(all_matches, acts)):
+    #         for match in doc_matches:
+    #             act = doc_acts[match.end - 1]
             
-                loss = (pred(self.module, match.data) - act)**2
+    #             loss = (pred(self.module, match.data) - act)**2
 
-                self.optimizer.zero_grad()
-                loss.backward()
-                self.optimizer.step()
+    #             self.optimizer.zero_grad()
+    #             loss.backward()
+    #             self.optimizer.step()
 
-    @property
-    def pyregex(self):
-        return self.module.pyregex

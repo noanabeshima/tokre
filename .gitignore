@@ -3,3 +3,15 @@
 **__pycache__**
 **.pt
 */**/*.pt
+poetry.lock
+dist/
+*.egg-info/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+.env
+.venv/
+.idea/
+.vscode/
+

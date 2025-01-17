@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "tokre"
-version = "1.1.dev1"
+version = "1.5.dev1"
 description = ""
 authors = ["Noa Nabeshima <noanabeshima@gmail.com>"]
 readme = "README.md"
@@ -11,7 +11,7 @@ lark = "^1.1.9"
 regex = "^2024.7.24"
 openai = "^1.37.1"
 backoff = "^2.2.1"
-numpy = "^2.0.1"
+numpy = "^1.24.0"
 tqdm = "^4.66.4"
 # ray = "^2.34.0"
 pathlib = "^1.0.1"
