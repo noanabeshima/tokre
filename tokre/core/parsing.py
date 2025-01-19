@@ -36,16 +36,16 @@ grammar = r"""
 
     var_defn: "[" pad? identifier pad? "=" pattern "]"
 
-    #  <group_block>{..}
+    #  e.g. `( a| an){2,3}`
     repeated_group: group_block REPEAT_POSTFIX
 
     # clearly delineated block
-    # (...) | (..|..) | [...] | . | [..=..] | ..among others..
+    # (...) | (..|..) | [...] | . | [..=..] | (a group block)<repeated with +, *, {a,b}, {a,}, {a}, or {a,b}> 
     ?group_block: "(" (or_pattern | phrase) ")" | macro | var_defn | lookaround | repeated_group | WILDCARD
     
     or_pattern: phrase ("|" phrase)+
 
-    # ( group | group{...} | seq of chars)+
+    # ( group_block | seq of chars)+
     ?phrase: (group_block  | char_seq )+
 
     ?pattern: phrase | or_pattern
@@ -252,7 +252,6 @@ class SimplifyTree(Transformer):
         return val
 
     def NUMBER(self, num_token):
-
         val = int(str(num_token))
         return val
 
@@ -264,7 +263,7 @@ class SimplifyTree(Transformer):
 
     def WILDCARD(self, chilren):
         """
-        need to convert to tree before InsertModules
+        need to convert to tree before InsertMatchers
         or an error gets thrown if a tokre-code line is only a wildcard.
         Can't apply a Transformer to a Token object.
         """
@@ -293,9 +292,9 @@ def remove_comments(code):
     return code
 
 
-def parse(s):
-    s = remove_comments(s)
-    parsed_lines = [parse_line(line) for line in s.split("\n") if len(line.strip()) > 0]
+def parse(script: str) -> Tree:
+    script = remove_comments(script)
+    parsed_lines = [parse_line(line) for line in script.split("\n") if len(line.strip()) > 0]
     tree = Tree("lines", parsed_lines)
     tree = SimplifyTree().transform(tree)
     return tree

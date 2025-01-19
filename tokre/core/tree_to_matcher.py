@@ -1,4 +1,4 @@
-from tokre.core.modules import (
+from tokre.core.matchers import (
     Toks,
     Repeat,
     Phrase,
@@ -16,7 +16,7 @@ from lark import Transformer
 import tokre
 
 
-class InsertModules(Transformer):
+class InsertMatchers(Transformer):
     def repeat(self, children):
         assert len(children) == 3
         child_matcher, repeat_min, repeat_max = children
@@ -49,12 +49,12 @@ class InsertModules(Transformer):
         return VarRef(var_name=var_name)
 
     def lookaround(self, children):
-        child_module, is_backward, is_neg = children
+        child_matcher, is_backward, is_neg = children
         if is_backward is True:
-            return Lookbehind(child_module, is_neg=is_neg)
+            return Lookbehind(child_matcher, is_neg=is_neg)
         else:
             assert is_backward is False
-            return Lookahead(child_module, is_neg=is_neg)
+            return Lookahead(child_matcher, is_neg=is_neg)
 
     def macro(self, children):
         assert len(children) >= 1
@@ -75,45 +75,45 @@ class InsertModules(Transformer):
             assert False, f"macro {macro_name} not found in macros.py"
 
 
-def tree_to_module(tree):
-    module = InsertModules().transform(tree)
-    return module
+def tree_to_matcher(tree):
+    matcher = InsertMatchers().transform(tree)
+    return matcher
 
 
 from torch import nn
 
 
-def recursively_add_name_to_submodule(module):
+def recursively_add_name_to_child_matcher(matcher):
     assert not hasattr(
-        module, "name_to_submodule"
-    ), "module already has name_to_submodule attribute"
-    name_to_submodule = {}
+        matcher, "name_to_child_matcher"
+    ), "matcher already has name_to_child_matcher attribute"
+    name_to_child_matcher = {}
 
     # [STUB] hard to read code
-    def add_named_submodules(module, name_to_submodule):
-        for submodule in module.children():
-            if hasattr(submodule, "name"):
+    def add_named_child_matchers(matcher, name_to_child_matcher):
+        for child_matcher in matcher.children():
+            if hasattr(child_matcher, "name"):
                 assert (
-                    submodule.name not in name_to_submodule
-                ), "Two tokre module children seem to have the same name?"
-                name_to_submodule[submodule.name] = submodule
+                    child_matcher.name not in name_to_child_matcher
+                ), "Two tokre child matchers seem to have the same name?"
+                name_to_child_matcher[child_matcher.name] = child_matcher
 
-            if isinstance(submodule, nn.ModuleList):
-                add_named_submodules(submodule, name_to_submodule)
+            if isinstance(child_matcher, nn.ModuleList):
+                add_named_child_matchers(child_matcher, name_to_child_matcher)
 
-        return name_to_submodule
+        return name_to_child_matcher
 
-    add_named_submodules(module, name_to_submodule)
+    add_named_child_matchers(matcher, name_to_child_matcher)
 
-    module.name_to_submodule = name_to_submodule
-    for submodule in module.children():
-        recursively_add_name_to_submodule(submodule)
+    matcher.name_to_child_matcher = name_to_child_matcher
+    for child_matcher in matcher.children():
+        recursively_add_name_to_child_matcher(child_matcher)
 
 
-# def compile(s):
-#     tree = parse(s)
-#     module = tree_to_module(tree)
-#     if len(list(module.parameters())) == 0:
-#         module = LearnedConst(module)
-#     recursively_add_name_to_submodule(module)
-#     return module
+def script_to_matcher(script: str):
+    tree = parse(script)
+    matcher = tree_to_matcher(tree)
+    if len(list(matcher.parameters())) == 0:
+        matcher = LearnedConst(matcher)
+    recursively_add_name_to_child_matcher(matcher)
+    return matcher

@@ -18,6 +18,8 @@ def setup(
 
     """
     assert tokenizer is not None, "`tokenizer` needs to be provided."
+    
+    
     if workspace is not None:
         assert workspace != "", "`workspace` can't be an empty string."
 

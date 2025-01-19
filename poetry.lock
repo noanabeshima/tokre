@@ -720,6 +720,16 @@ files = [
 ]
 
 [[package]]
+name = "schedulefree"
+version = "1.4"
+description = "Schedule Free Learning in PyTorch"
+optional = false
+python-versions = ">=3.4"
+files = [
+    {file = "schedulefree-1.4.tar.gz", hash = "sha256:59b7ec9ac0f714730cbcdde435b7d9b415d3fc3c5d2133e0f124e07aba4ba86a"},
+]
+
+[[package]]
 name = "sniffio"
 version = "1.3.1"
 description = "Sniff out which async library your code is running under"
@@ -765,4 +775,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "a3468122c3ba2855b066960d19db243bd7bffb67ef9442378ee2c3a322eb700c"
+content-hash = "7b916c98f8da10267693a1c44bff861b055ca8646e757c4c91509d87163ab504"

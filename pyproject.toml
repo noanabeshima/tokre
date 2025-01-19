@@ -17,6 +17,7 @@ tqdm = "^4.66.4"
 pathlib = "^1.0.1"
 black = "^24.4.2"
 frozendict = "^2.4.4"
+schedulefree = "^1.4"
 
 
 [[tool.poetry.source]]

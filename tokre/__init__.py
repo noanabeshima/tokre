@@ -1,12 +1,13 @@
 import os
 from tokre.setup import setup
 from tokre.core.parsing import parse, escape
-from tokre.core.tree_to_module import tree_to_module, compile
-from tokre.core.synth_feat import SynthFeat, collect_matches
+from tokre.core.tree_to_matcher import tree_to_matcher, script_to_matcher
+from tokre.core.synth_feat import SynthFeat, compile
 
-from tokre.core.modules import EmbedData, PredData, PartialMatch, Mixer
+from tokre.core.matchers import EmbedData, PredData, PartialMatch, Mixer
+from tokre.utils import get_vocab
 
-from tokre.labelling.create_label import create_label, get_all_toks
+from tokre.labelling.create_label import create_label
 from tokre.labelling.literal_set_utils import load_literal_set, save_literal_set
 from tokre.labelling.get_words import get_word_counts
 
@@ -19,7 +20,6 @@ this._tokenizer = None
 this._workspace = None
 this._openai_api_key = os.environ.get("OPENAI_API_KEY", None)
 
-
 def get_tokenizer():
     if this._tokenizer is None:
         raise ValueError(
@@ -28,12 +28,14 @@ def get_tokenizer():
     return this._tokenizer
 
 
-def get_workspace(assert_exists=True):
-    if this._workspace is None and assert_exists is True:
+def get_workspace():
+    if this._workspace is None:
         raise ValueError(
             "Workspace not initialized. Call `tokre.setup(tokenizer=your_tokenizer, workspace='your_workspace')` first."
         )
     return this._workspace
+
+
 
 import transformers
 import tokenizers
