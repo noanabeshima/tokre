@@ -128,22 +128,20 @@ class SimplifyTree(Transformer):
     def char_seq(self, children):
         s = ""
         for child in children:
-            assert isinstance(child, lark.lexer.Token) or\
-                isinstance(child, int),\
-                    child
+            assert isinstance(child, lark.lexer.Token) or isinstance(child, int), child
             child_str = str(child)
-    
+
             if len(child_str) == 2 and child_str[0] == "\\":
-                if child_str[1] == 'n':
-                    child_str = '\n'
+                if child_str[1] == "n":
+                    child_str = "\n"
                 else:
                     child_str = child_str[-1]
 
             s += child_str
-        if len(s.replace('\n', '↵').strip()) == 0:
+        if len(s.replace("\n", "↵").strip()) == 0:
             return Discard
 
-        s = s.rstrip(' ')
+        s = s.rstrip(" ")
         if s[0] == " ":
             s = " " + s.lstrip()
         return Tree("string", [s])
@@ -294,7 +292,9 @@ def remove_comments(code):
 
 def parse(script: str) -> Tree:
     script = remove_comments(script)
-    parsed_lines = [parse_line(line) for line in script.split("\n") if len(line.strip()) > 0]
+    parsed_lines = [
+        parse_line(line) for line in script.split("\n") if len(line.strip()) > 0
+    ]
     tree = Tree("lines", parsed_lines)
     tree = SimplifyTree().transform(tree)
     return tree

@@ -12,13 +12,15 @@ from tokre.labelling.literal_set_utils import load_literal_set, save_literal_set
 from tokre.labelling.get_words import get_word_counts
 
 # See https://stackoverflow.com/a/35904211/10222613
-# I think this avoids import cycle issues
+# Avoids import cycle issues
 import sys
+
 this = sys.modules[__name__]
 
 this._tokenizer = None
 this._workspace = None
 this._openai_api_key = os.environ.get("OPENAI_API_KEY", None)
+
 
 def get_tokenizer():
     if this._tokenizer is None:
@@ -36,16 +38,25 @@ def get_workspace():
     return this._workspace
 
 
-
 import transformers
 import tokenizers
 
+
 def encode(text):
     tokenizer = get_tokenizer()
-    
-    enc_kwargs = {'add_special_tokens': False}\
-        if isinstance(tokenizer, (transformers.PreTrainedTokenizer, transformers.PreTrainedTokenizerFast, tokenizers.Tokenizer))\
+
+    enc_kwargs = (
+        {"add_special_tokens": False}
+        if isinstance(
+            tokenizer,
+            (
+                transformers.PreTrainedTokenizer,
+                transformers.PreTrainedTokenizerFast,
+                tokenizers.Tokenizer,
+            ),
+        )
         else {}
+    )
 
     return tokenizer.encode(text, **enc_kwargs)
 
@@ -65,4 +76,3 @@ def tok_split(s: str):
     tok_ids = encode(s)
     tok_strs = [decode([tok_id]) for tok_id in tok_ids]
     return tok_strs
-

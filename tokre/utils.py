@@ -9,7 +9,6 @@ import numpy as np
 import tokre
 
 
-
 def get_vocab_size(tokenizer):
     """
     Get the size of the vocabulary from the tokenizer.
@@ -28,6 +27,7 @@ def get_vocab_size(tokenizer):
         raise AttributeError(
             "The tokenizer must have either 'vocab_size' or 'n_vocab' attribute."
         )
+
 
 @lru_cache()
 def get_vocab():
@@ -65,9 +65,6 @@ def hash_tokenizer(tokenizer):
     # python hash fn is nondeterministic between sessions (!) so we use md5 instead.
     tokens_str = tokenizer.decode(list(range(vocab_size)))
     return hashlib.md5(tokens_str.encode()).hexdigest()
-
-
-
 
 
 def threaded_map(

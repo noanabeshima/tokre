@@ -13,7 +13,7 @@ def randstr(length=6):
     return "".join(random.choices(string.ascii_uppercase, k=length))
 
 
-'''
+"""
 Every tokre match comes with PredData. This is optionally-nested data that represents the branches a match or partial match took.
 The idea is that we want to incorporate *how* the match occured into our prediction of a feature.
 
@@ -24,7 +24,8 @@ The simplest PredData is None representing no data.
 The next step up in complexity is is EmbedData, which contains an int or tuple of ints.
 A PartialMatch itself can be PredData
 Finally, a list of PredData can be PredData.
-'''
+"""
+
 
 @dataclass
 class EmbedData:
@@ -34,16 +35,18 @@ class EmbedData:
 
 PredData = Union["PartialMatch", EmbedData, None, list["PredData"]]
 
+
 @dataclass
 class PartialMatch:
     """PartialMatch represents a partial match for some token sequence.
-    
+
     Attributes:
         start: Starting index of the partial match
-        end: Ending index of the partial match 
+        end: Ending index of the partial match
         defns: Variable definitions created by [<var_ref>=(...)] syntax
         data: Existing match data used for prediction
     """
+
     name: str
     start: int
     end: int
@@ -62,15 +65,13 @@ def is_pred_data(obj):
     )
 
 
-
-'''
+"""
 Here we define the core primitive modules that take in PredData to produce a single predicted activation number: Embed and Mixer.
     Embed contains an n-d PyTorch parameter that's indexed into to produce a single prediction float.
     Mixer combines outputs from Embed/Mixers into a single prediction float.
 
 The 'matcher' modules in modules.py use these to 
-'''
-
+"""
 
 
 class Embed(nn.Module):

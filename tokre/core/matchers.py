@@ -9,7 +9,6 @@ from frozendict import frozendict
 from .prediction_primitives import *
 
 
-
 def batched_extend_matches(
     toks, partial_matches: list[PartialMatch], child_matcher, reversed
 ):
@@ -23,7 +22,7 @@ def batched_extend_matches(
         reversed: Whether to match in reverse direction
 
     Returns:
-        list[PartialMatch]: List of new extended partial matches, where each original 
+        list[PartialMatch]: List of new extended partial matches, where each original
         partial match may generate zero or more extended matches based on the child matcher results.
         The data field of each extended match appends the child match data to the original partial's data.
     """
@@ -33,7 +32,9 @@ def batched_extend_matches(
         assert isinstance(
             partial.data, list
         ), f"Provided partial match group_data must be represented as a list: {partial.data=}"
-        matcher_results = child_matcher.get_partial_match_extensions(toks, partial, reversed=reversed)
+        matcher_results = child_matcher.get_partial_match_extensions(
+            toks, partial, reversed=reversed
+        )
 
         for match_extension in matcher_results:
             extended_match = PartialMatch(
@@ -53,31 +54,33 @@ def toks_eq(toks_a: list[str], toks_b: list[str]):
     )
 
 
-
-
 Inf = float("inf")
+
 
 class Matcher(nn.Module):
     """Base class for tokre pattern matching modules.
     Implements default get_partial_match_extensions method that returns empty list.
     All matcher modules should inherit from this class."""
-    
+
     def __init__(self):
         super().__init__()
-        
-    def get_partial_match_extensions(self, toks: list[str], partial: PartialMatch, reversed: bool):
+
+    def get_partial_match_extensions(
+        self, toks: list[str], partial: PartialMatch, reversed: bool
+    ):
         """Abstract method that must be implemented by subclasses.
-        
+
         Args:
             toks: list[str], list of tokens to match against
             partial: PartialMatch, current partial match state
             reversed: bool, Whether to match tokens in reverse order
-            
+
         Returns:
             List of PartialMatch objects
         """
-        raise NotImplementedError("Subclasses must implement get_partial_match_extensions")
-
+        raise NotImplementedError(
+            "Subclasses must implement get_partial_match_extensions"
+        )
 
 
 class Toks(Matcher):
@@ -99,7 +102,6 @@ class Toks(Matcher):
             return [match]
         else:
             return []
-
 
     def __repr__(self):
         return f"Toks({self.toks})"
@@ -198,7 +200,7 @@ class Wildcard(Matcher):
                     start=partial.end,
                     end=partial.end + 1,
                     defns=partial.defns,
-                    data=None
+                    data=None,
                 )
             ]
         else:
@@ -218,7 +220,9 @@ class OrGroup(Matcher):
     def get_partial_match_extensions(self, toks, partial, reversed=False):
         res = []
         for branch_idx, branch in enumerate(self.branches):
-            for match in branch.get_partial_match_extensions(toks, partial, reversed=reversed):
+            for match in branch.get_partial_match_extensions(
+                toks, partial, reversed=reversed
+            ):
                 res.append(
                     PartialMatch(
                         name=self.name,
@@ -239,7 +243,9 @@ class VarDefn(Matcher):
         self.child_matcher = child_matcher
 
     def get_partial_match_extensions(self, toks, partial, reversed=False):
-        child_matches = self.child_matcher.get_partial_match_extensions(toks, partial, reversed=reversed)
+        child_matches = self.child_matcher.get_partial_match_extensions(
+            toks, partial, reversed=reversed
+        )
 
         res = []
         for match in child_matches:
@@ -298,7 +304,9 @@ class Lookahead(Matcher):
 
     def get_partial_match_extensions(self, toks, partial, reversed):
 
-        matches = self.child_module.get_partial_match_extensions(toks, partial, reversed=False)
+        matches = self.child_module.get_partial_match_extensions(
+            toks, partial, reversed=False
+        )
         if self.is_neg:
             if matches:
                 return []
@@ -387,7 +395,9 @@ class LearnedConst(Matcher):
         self.bias = Embed(1)
 
     def get_partial_match_extensions(self, toks, partial, reversed):
-        matches = self.child_module.get_partial_match_extensions(toks, partial, reversed)
+        matches = self.child_module.get_partial_match_extensions(
+            toks, partial, reversed
+        )
         matches = [
             PartialMatch(
                 name=self.name,

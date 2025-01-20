@@ -6,9 +6,9 @@ from tqdm import tqdm
 
 
 def get_word_counts(dataset):
-    '''
+    """
     Takes a transformers dataset with a text column, splits up each string into token strings using the tokre-setup tokenizer, and extracts word counts.
-    '''
+    """
     word_synth = tokre.SynthFeat(
         r"""
 valid_last_tok = (?<![re `[.,?!"';:\#$^&*()-]` search=True])
@@ -28,17 +28,14 @@ word = [nospace_word] | [space_word]
     word_counts = {}
 
     for item in tqdm(dataset):
-        doc = item['text']
+        doc = item["text"]
         try:
             toks = tokre.tok_split(doc)
         except Exception as e:
             print(f"Error tokenizing document: {e}")
             continue
         matches = word_synth.get_matches(toks)
-        words = [
-            tuple(toks[match.start : match.end])
-            for match in matches
-        ]
+        words = [tuple(toks[match.start : match.end]) for match in matches]
 
         for word in words:
             if word in word_counts:

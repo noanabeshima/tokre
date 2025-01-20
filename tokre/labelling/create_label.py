@@ -8,7 +8,13 @@ import numpy as np
 
 import tokre
 from tokre.labelling.query_openai import query_openai
-from tokre.utils import assert_snake_case, format_nest, get_vocab_size, threaded_map, save_dict
+from tokre.utils import (
+    assert_snake_case,
+    format_nest,
+    get_vocab_size,
+    threaded_map,
+    save_dict,
+)
 
 
 def extract_stripped_toks(toks):

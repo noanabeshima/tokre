@@ -25,7 +25,7 @@ class InsertMatchers(Transformer):
     def string(self, children):
         assert len(children) == 1, children
         assert isinstance(children[0], str)
-        
+
         toks = [tokre.dec([tok_id]) for tok_id in list(tokre.enc(children[0]))]
         return Toks(toks=toks)
 
@@ -89,7 +89,6 @@ def recursively_add_name_to_child_matcher(matcher):
     ), "matcher already has name_to_child_matcher attribute"
     name_to_child_matcher = {}
 
-    # [STUB] hard to read code
     def add_named_child_matchers(matcher, name_to_child_matcher):
         for child_matcher in matcher.children():
             if hasattr(child_matcher, "name"):

@@ -12,14 +12,17 @@ from frozendict import frozendict
 from typing import Iterable
 from tqdm import tqdm
 
-def collect_matches(matcher: Matcher, toks: Iterable[str], aggr="longest") -> list[PartialMatch]:
-    '''
+
+def collect_matches(
+    matcher: Matcher, toks: Iterable[str], aggr="longest"
+) -> list[PartialMatch]:
+    """
     Given a matcher defined in tokre.core.matchers.py or tokre.core.macros.py, which implements the method get_partial_match_extensions,
         - Calculate all matches
         - For each possible match-end, choose the (longest|shortest) match with that end index
             (no guarantees if multiple matches have the same extremal length)
         - Return these matches
-    '''
+    """
     assert aggr in ["shortest", "longest"]
     starting_matches = [
         PartialMatch(
@@ -36,12 +39,13 @@ def collect_matches(matcher: Matcher, toks: Iterable[str], aggr="longest") -> li
     unaggregated_matches = [
         match
         for start_match in starting_matches
-        for match in matcher.get_partial_match_extensions(toks, start_match, reversed=False)
+        for match in matcher.get_partial_match_extensions(
+            toks, start_match, reversed=False
+        )
     ]
-    
+
     # dictionary from end of a match (an int) to the longest match seen so far that ends there (PartialMatch)
     end_to_aggr_match = {}
-
 
     # If two matches end at the same point, keep just the longest match.
     # No guarantees are provided on which match will be selected if two matches have the same end point and the same length.
@@ -80,7 +84,9 @@ def get_single_prediction(matcher, match_data):
 
     if isinstance(match_data, list):
         assert hasattr(matcher, "mixer"), matcher
-        preds = [torch.tensor(1.0)] + [get_single_prediction(matcher, data) for data in match_data]
+        preds = [torch.tensor(1.0)] + [
+            get_single_prediction(matcher, data) for data in match_data
+        ]
         preds = torch.stack(preds)
 
         return matcher.mixer(preds)
@@ -90,7 +96,9 @@ def get_single_prediction(matcher, match_data):
 
         assert hasattr(matcher, "name_to_child_matcher")
         assert match.name in matcher.name_to_child_matcher, (matcher.name, match.name)
-        return get_single_prediction(matcher.name_to_child_matcher[match.name], match.data)
+        return get_single_prediction(
+            matcher.name_to_child_matcher[match.name], match.data
+        )
 
     elif match_data is None:
         return torch.tensor(1.0)
@@ -100,7 +108,7 @@ def get_single_prediction(matcher, match_data):
 
 
 def tok_ids_to_string(toks):
-    '''If toks is a tok id array, convert to a numpy array of token strings'''
+    """If toks is a tok id array, convert to a numpy array of token strings"""
     if isinstance(toks, np.ndarray) or isinstance(toks, torch.Tensor):
         vocab = tokre.get_vocab()
         return vocab[toks]
@@ -124,18 +132,20 @@ class SynthFeat(nn.Module):
         ):
             # In this branch, toks is a list of documents (toks: list[list[str]] or 2d numpy array of strs)
             docs = toks
-            
-            pbar = tqdm(docs, desc='collecting matches')
-            per_doc_matches = [collect_matches(self.matcher, toks=doc, aggr=self.aggr) for doc in pbar]
+
+            pbar = tqdm(docs, desc="collecting matches")
+            per_doc_matches = [
+                collect_matches(self.matcher, toks=doc, aggr=self.aggr) for doc in pbar
+            ]
             return per_doc_matches
 
         matches = collect_matches(self.matcher, toks=toks, aggr=self.aggr)
         return matches
 
     def get_mask(self, toks: Iterable):
-        '''
+        """
         Get mask of token positions where at least one match ends (i.e. there's a match there)
-        
+
         For example if the SynthFeat script is
         ` a ( gorgeous| beautiful| silly) frog`
 
@@ -151,7 +161,7 @@ class SynthFeat(nn.Module):
             [0, 0, 0, 0, 1, 0],
             [0, 0, 0, 0, 0, 0]
         ])
-        '''
+        """
         toks = tok_ids_to_string(toks)
 
         if isinstance(toks[0], Iterable) and not isinstance(toks[0], str):
@@ -173,11 +183,11 @@ class SynthFeat(nn.Module):
 
     @torch.no_grad()
     def get_preds(self, toks, n_matchers=1):
-        '''
+        """
         Get feature predictions.
 
         Used after training this SynthFeat with the `train` method.
-        '''
+        """
         toks = tok_ids_to_string(toks)
 
         if isinstance(toks, Iterable) and isinstance(toks[0], str):
@@ -195,10 +205,9 @@ class SynthFeat(nn.Module):
                 for match in matches:
                     with torch.no_grad():
                         prediction = get_single_prediction(self.matcher, match.data)
-                        synth_acts[doc_idx, match.end-1] = prediction
-        
-        return synth_acts
+                        synth_acts[doc_idx, match.end - 1] = prediction
 
+        return synth_acts
 
     def train(self, toks, acts, parallel=True):
         print("getting matches")
@@ -207,8 +216,8 @@ class SynthFeat(nn.Module):
         for doc_matches, doc_acts in tqdm(zip(all_matches, acts)):
             for match in doc_matches:
                 act = doc_acts[match.end - 1]
-            
-                loss = (get_single_prediction(self.matcher, match.data) - act)**2
+
+                loss = (get_single_prediction(self.matcher, match.data) - act) ** 2
 
                 self.optimizer.zero_grad()
                 loss.backward()
