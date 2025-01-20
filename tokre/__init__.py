@@ -5,7 +5,6 @@ from tokre.core.tree_to_module import tree_to_module, compile
 from tokre.core.synth_feat import SynthFeat, collect_matches
 
 from tokre.core.modules import EmbedData, PredData, PartialMatch, Mixer
-from tokre.core.pyregex import pyregex_literal
 
 from tokre.labelling.create_label import create_label, get_all_toks
 from tokre.labelling.literal_set_utils import load_literal_set, save_literal_set
