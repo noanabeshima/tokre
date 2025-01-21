@@ -55,7 +55,7 @@ script = r'''
 punctuation_token = [re `[.*(:|;|,|"|\?|\.|!).*]`]
 starts_with_m = [re `( m| M|M).*`]
 nospace_token = [re `[^\s].*`]
-m_word_token = [starts_with_m][nospace_token](?<![punctuation_token])
+m_word_token = [starts_with_m]([nospace_token](?<![punctuation_token]))*
 '''
 
 # a 2d numpy array of token strings
