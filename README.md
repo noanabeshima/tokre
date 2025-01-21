@@ -65,7 +65,7 @@ tok_strs = np.array([
    ['Hello', ' World', '!', ' Here', "'", 's', ' an', ' example', '.']
 ])
 
-synth = tokre.compile(script)
+synth = tokre.SynthFeat(script)
 synth_acts = synth.get_mask(tok_strs)
 ```
 
