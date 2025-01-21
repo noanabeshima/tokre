@@ -15,7 +15,7 @@ Taking the cosine sim of this synthetic feature with the latent activation in a 
 ![image](https://github.com/user-attachments/assets/696ee6ba-2285-418a-8702-0faff32878c5)
 
 
-- Words that start with 'M' would look like this:
+Words that start with 'M' would look like this:
 
 ```
 punctuation_token = [re `[.*(:|;|,|"|\?|\.|!).*]`]
@@ -28,6 +28,15 @@ m_word_token = [starts_with_m][nospace_token](?<![punctuation_token])
 
 Using this script we find this latent
 ![image](https://github.com/user-attachments/assets/749cf5cc-5cf8-45f2-a3dc-a770f1bbe276)
+
+Major Cities script
+
+```
+( Paris | New York | London | Tokyo | Shanghai | Dubai | Singapore | Sydney | Mumbai | Istanbul | São Paulo | Moscow | Berlin | Toronto | Seoul )
+```
+
+finds
+![image](https://github.com/user-attachments/assets/8fdf930f-8447-4442-92c5-f85f308af636)
 
 
 Tokre can be used to debug hypotheses and more easily find interesting exceptions:
