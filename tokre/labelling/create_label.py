@@ -2,23 +2,19 @@ import itertools
 import json
 import os
 import random
-from functools import lru_cache
 from typing import Optional
 
 import numpy as np
 
 import tokre
 from tokre.labelling.query_openai import query_openai
-from tokre.utils import assert_snake_case, format_nest, get_vocab_size, threaded_map
-
-from tokre.utils import save_dict
-
-
-@lru_cache()
-def get_all_toks():
-    tok_ids = np.arange(get_vocab_size(tokre._tokenizer))
-    toks = [tokre.decode([tok_id]) for tok_id in tok_ids]
-    return toks
+from tokre.utils import (
+    assert_snake_case,
+    format_nest,
+    get_vocab_size,
+    threaded_map,
+    save_dict,
+)
 
 
 def extract_stripped_toks(toks):

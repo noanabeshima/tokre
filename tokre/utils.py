@@ -4,6 +4,9 @@ from queue import Queue
 from threading import Thread
 
 from tqdm import tqdm
+from functools import lru_cache
+import numpy as np
+import tokre
 
 
 def get_vocab_size(tokenizer):
@@ -24,6 +27,13 @@ def get_vocab_size(tokenizer):
         raise AttributeError(
             "The tokenizer must have either 'vocab_size' or 'n_vocab' attribute."
         )
+
+
+@lru_cache()
+def get_vocab():
+    tok_ids = np.arange(get_vocab_size(tokre.get_tokenizer()))
+    toks = np.array([tokre.decode([tok_id]) for tok_id in tok_ids])
+    return toks
 
 
 def hash_tokenizer(tokenizer):

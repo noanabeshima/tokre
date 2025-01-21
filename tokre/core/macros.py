@@ -1,10 +1,45 @@
 """
-This module defines various custom matching modules and utilities for the tokre pattern matching system.
+This module defines custom Matchers called 'macros' for the tokre pattern matching system.
 It includes modules for handling token variants, regular expressions, literal sets, and other pattern matching operations.
+
+These macro `Matcher`s are different from the ones defined in matchers.py because they don't have their own custom syntax.
+Instead, to use one, you just use their name given by the DEFINED_MACROS dictionary at the bottom of the page inside square brackets.
+
+Examples
+-----------
+[BEGIN]
+    matches the begin token
+
+[re pattern=`( b).*`]
+    matches tokens that start with ` b`
+
+[re `( b).*`]
+    equivalent to previous
+
+[pos]
+    inserts positional information if you're trying to do feature prediction
+
+
+These are nice because it's really easy to add new matchers without messing with the parser! It makes tokre more easily extensible.
+
+Supported argument types: ints, strings (surrounded by backticks), bools (True/False), and other matchers/macros.
+
+The documentation for this and the whole library is pretty bad currently.
+Please reach out (@NoaNabeshima on twitter) if you have questions or would like to help me document/clean up my research code.
 """
 
-from tokre.core.modules import Embed, Mixer, VarRef, PartialMatch, randstr, toks_eq
+from tokre.core.matchers import (
+    Embed,
+    Mixer,
+    VarRef,
+    PartialMatch,
+    randstr,
+    toks_eq,
+    Matcher,
+)
 from torch import nn
+import regex as re
+from frozendict import frozendict
 
 
 def tok_split(s):
@@ -20,13 +55,14 @@ def get_literal_variants(tok_literal: list[str]):
     return variants
 
 
-class BEGIN(nn.Module):
+class BEGIN(Matcher):
     """Module that matches a special [BEGIN] token."""
+
     def __init__(self):
         super().__init__()
         self.name = f"BEGIN:{randstr()}"
 
-    def matches(self, toks, partial, reversed):
+    def get_partial_match_extensions(self, toks, partial, reversed):
         if toks[partial.end] == "[BEGIN]":
             return [
                 PartialMatch(
@@ -40,14 +76,16 @@ class BEGIN(nn.Module):
         else:
             return []
 
-class AbsPos(nn.Module):
+
+class AbsPos(Matcher):
     """Module that embeds absolute positions in the token sequence."""
-    def __init__(self, max_pos_idx=129):
+
+    def __init__(self, max_pos_idx=100_000):
         super().__init__()
         self.name = f"pos:{randstr()}"
         self.pos_embed = Embed(max_pos_idx)
 
-    def matches(self, toks, partial, reversed):
+    def get_partial_match_extensions(self, toks, partial, reversed):
         return [
             PartialMatch(
                 name=self.name,
@@ -59,16 +97,16 @@ class AbsPos(nn.Module):
         ]
 
 
-
-class VarVariant(nn.Module):
+class VarVariant(Matcher):
     """Module that matches variants of a variable reference string."""
+
     def __init__(self, var_ref):
         super().__init__()
         assert isinstance(var_ref, VarRef), var_ref
         self.name = f"VarVariant:{var_ref}:{randstr()}"
         self.var_name = var_ref.var_name
 
-    def matches(self, toks, partial, reversed):
+    def get_partial_match_extensions(self, toks, partial, reversed):
         res = []
         if self.var_name in partial.defns:
             var_toks = partial.defns[self.var_name]
@@ -87,19 +125,19 @@ class VarVariant(nn.Module):
         return res
 
 
-
-class VarVariantPrefix(nn.Module):
+class VarVariantPrefix(Matcher):
     """Module that matches prefixes of variable reference variants."""
+
     def __init__(self, var_ref, max_len=128):
         super().__init__()
         assert isinstance(var_ref, VarRef) or isinstance(var_ref, str), var_ref
         self.name = f"VarVariantPrefix:{str(var_ref)}:{randstr()}"
-        
+
         self.var_name = str(var_ref) if isinstance(var_ref, str) else var_ref.var_name
         self.var_len_and_prefix_idx = Embed((max_len + 1, max_len + 1))
         self.max_len = max_len
 
-    def matches(self, toks, partial, reversed):
+    def get_partial_match_extensions(self, toks, partial, reversed):
         res = []
         if self.var_name in partial.defns:
             var_toks = partial.defns[self.var_name]
@@ -124,18 +162,17 @@ class VarVariantPrefix(nn.Module):
                         )
         return res
 
-import regex as re
 
-
-class TokRegex(nn.Module):
+class TokRegex(Matcher):
     """Module that matches individual tokens using regular expressions."""
+
     def __init__(self, pattern, search=False):
         super().__init__()
         self.name = f"TokRegex:{pattern}:{randstr()}"
         self.pattern = pattern
         self.search = search
 
-    def matches(self, toks, partial, reversed):
+    def get_partial_match_extensions(self, toks, partial, reversed):
         if partial.end == len(toks):
             return []
 
@@ -156,8 +193,10 @@ class TokRegex(nn.Module):
         else:
             return []
 
-class FlexRegex(nn.Module):
+
+class FlexRegex(Matcher):
     """Module that matches tokens using regular expressions with flexible spacing and capitalization."""
+
     def __init__(self, pattern, search=False):
         super().__init__()
         self.name = f"FlexRegex:{pattern}:{randstr()}"
@@ -167,43 +206,58 @@ class FlexRegex(nn.Module):
         self.capitalization = Embed(6)
         self.mixer = Mixer(2, linear=True, bilinear=True)
 
-        
-
-    def matches(self, toks, partial, reversed):
+    def get_partial_match_extensions(self, toks, partial, reversed):
         if partial.end == len(toks):
             return []
-
 
         tok = toks[partial.end]
 
         stripped_tok = tok.strip()
         normalized_tok = stripped_tok.lower()
-        
 
         if (self.search and re.search(self.pattern, normalized_tok)) or re.fullmatch(
             self.pattern, normalized_tok
         ):
-            capitalization = 0 if len(stripped_tok) == 0 else\
-                  1 if stripped_tok.islower() else\
-                  2 if stripped_tok.isupper() else\
-                  3 if (stripped_tok[0].isupper() and len(stripped_tok) > 1 and stripped_tok[1:].islower()) else\
-                  4 if stripped_tok[0].isupper() else\
-                  5
+            capitalization = (
+                0
+                if len(stripped_tok) == 0
+                else (
+                    1
+                    if stripped_tok.islower()
+                    else (
+                        2
+                        if stripped_tok.isupper()
+                        else (
+                            3
+                            if (
+                                stripped_tok[0].isupper()
+                                and len(stripped_tok) > 1
+                                and stripped_tok[1:].islower()
+                            )
+                            else 4 if stripped_tok[0].isupper() else 5
+                        )
+                    )
+                )
+            )
             return [
                 PartialMatch(
                     name=self.name,
                     start=partial.end,
                     end=partial.end + 1,
                     defns=partial.defns,
-                    data=[self.spacing(int(tok[0] == ' ')), self.capitalization(capitalization)],
+                    data=[
+                        self.spacing(int(tok[0] == " ")),
+                        self.capitalization(capitalization),
+                    ],
                 )
             ]
         else:
             return []
 
 
-class TokRegexSet(nn.Module):
+class TokRegexSet(Matcher):
     """Module that matches tokens from a pre-computed set of tokens matching a regex pattern."""
+
     def __init__(self, pattern, search=False):
         super().__init__()
         self.name = f"TokRegexSet:{pattern}:{randstr()}"
@@ -219,7 +273,7 @@ class TokRegexSet(nn.Module):
                 tok for tok in tokre.get_all_toks() if re.fullmatch(self.pattern, tok)
             }
 
-    def matches(self, toks, partial, reversed):
+    def get_partial_match_extensions(self, toks, partial, reversed):
         if partial.end == len(toks) and not reversed:
             return []
 
@@ -242,8 +296,9 @@ class TokRegexSet(nn.Module):
             return []
 
 
-class Prefix(nn.Module):
+class Prefix(Matcher):
     """Module that matches prefixes of another module's matches. This is a bit artificial because it requires looking to the future."""
+
     def __init__(self, child_module, max_len=10):
         super().__init__()
         self.name = f"Prefix:{randstr()}"
@@ -252,18 +307,25 @@ class Prefix(nn.Module):
         self.match_len_and_prefix_len = Embed((max_len, max_len))
         self.mixer = Mixer(2, linear=True, bilinear=True)
 
-    def matches(self, toks, partial, reversed):
-        matches = self.child_module.matches(toks, partial, reversed)
+    def get_partial_match_extensions(self, toks, partial, reversed):
+        matches = self.child_module.get_partial_match_extensions(
+            toks, partial, reversed
+        )
         res = []
         for match in matches:
-            for prefix_end in range(match.start+1, match.end+1):
+            for prefix_end in range(match.start + 1, match.end + 1):
                 res.append(
                     PartialMatch(
                         name=self.name,
                         start=match.start,
                         end=prefix_end,
                         defns=match.defns,
-                        data=[match, self.match_len_and_prefix_len(match.end-match.start, prefix_end - match.start)]
+                        data=[
+                            match,
+                            self.match_len_and_prefix_len(
+                                match.end - match.start, prefix_end - match.start
+                            ),
+                        ],
                     )
                 )
         return res
@@ -273,11 +335,12 @@ import tokre
 import json
 
 import torch
-from tokre.core.modules import PartialMatch
+from tokre.core.matchers import PartialMatch
 
 
 class TrieNode:
     """Node in a trie data structure."""
+
     def __init__(self):
         self.children = {}
         self.is_end = False
@@ -286,6 +349,7 @@ class TrieNode:
 
 class Trie:
     """Trie data structure for efficient prefix matching."""
+
     def __init__(self, literals, values=None):
         self.root = TrieNode()
         if values is None:
@@ -314,8 +378,9 @@ class Trie:
         return result
 
 
-class LiteralSet(nn.Module):
+class LiteralSet(Matcher):
     """Module that matches literals from a pre-defined set loaded from a JSON file."""
+
     def __init__(self, literal_name):
         super().__init__()
         self.name = f"Literalset:{literal_name}:{randstr()}"
@@ -334,7 +399,7 @@ class LiteralSet(nn.Module):
 
         self.mixer = Mixer(1, linear=True)
 
-    def matches(self, toks, partial, reversed):
+    def get_partial_match_extensions(self, toks, partial, reversed):
         trie = self.trie if reversed is False else self.reversed_trie
 
         res = []
@@ -354,17 +419,21 @@ class LiteralSet(nn.Module):
             )
 
         return res
-    
-from frozendict import frozendict
 
-class Redefine(nn.Module):
+
+class Redefine(Matcher):
     """Module that redefines a variable under a new name."""
-    def __init__(self, var_name: str, new_var_name: str, ):
-        self.name = f'Redefine:{randstr()}'
+
+    def __init__(
+        self,
+        var_name: str,
+        new_var_name: str,
+    ):
+        self.name = f"Redefine:{randstr()}"
         self.var_name = var_name
         self.new_var_name = new_var_name
 
-    def matches(self, toks, partial, reversed):
+    def get_partial_match_extensions(self, toks, partial, reversed):
         if self.var_name in partial.defns:
             new_defns = {k: v for (k, v) in partial.defns.items() if k != self.var_name}
             new_defns[self.new_var_name] = partial.defns[self.var_name]
@@ -373,8 +442,8 @@ class Redefine(nn.Module):
                     name=self.name,
                     start=partial.end,
                     end=partial.end,
-                    defns = frozendict(new_defns),
-                    data=None
+                    defns=frozendict(new_defns),
+                    data=None,
                 )
             ]
         else:
@@ -383,12 +452,11 @@ class Redefine(nn.Module):
                     name=self.name,
                     start=partial.end,
                     end=partial.end,
-                    defns = partial.defns,
-                    data=None
+                    defns=partial.defns,
+                    data=None,
                 )
             ]
 
-        
 
 # Dictionary mapping macro names to their implementing classes
 DEFINED_MACROS = {
@@ -402,5 +470,5 @@ DEFINED_MACROS = {
     "BEGIN": BEGIN,
     "redefine": Redefine,
     "pos": AbsPos,
-    'flex': FlexRegex
+    "flex": FlexRegex,
 }
