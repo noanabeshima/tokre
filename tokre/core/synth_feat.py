@@ -109,7 +109,7 @@ def get_single_prediction(matcher, match_data):
 
 def tok_ids_to_string(toks):
     """If toks is a tok id array, convert to a numpy array of token strings"""
-    if isinstance(toks, np.ndarray) or isinstance(toks, torch.Tensor):
+    if (isinstance(toks, np.ndarray) and np.issubdtype(toks.dtype, np.integer)) or isinstance(toks, torch.Tensor):
         vocab = tokre.get_vocab()
         return vocab[toks]
     else:
